@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Tekshiruv Nazorat</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{
+  --blue:#1565C0;--blue-mid:#1976D2;--blue-dark:#0D47A1;--blue-lt:#E3F2FD;
+  --green:#2E7D32;--green-lt:#E8F5E9;
+  --amber:#F57F17;--amber-lt:#FFF9C4;
+  --purple:#6A1B9A;--purple-lt:#F3E5F5;
+  --red:#C62828;--red-lt:#FFEBEE;
+  --bg:#F0F4F8;--surface:#fff;--border:#E0E7EF;
+  --txt:#1A2535;--txt2:#5A6A7E;--txt3:#94A3B8;
+  --r:14px;--r-sm:9px;
+  --shadow-sm:0 1px 4px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#CBD5E1;font-family:'DM Sans',sans-serif;color:var(--txt)}
+#app{max-width:390px;margin:0 auto;min-height:100vh;background:var(--bg);
+  display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.2)}
+.screen{display:none;flex-direction:column;flex:1;animation:fu .2s ease}
+.screen.active{display:flex}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.topbar{background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));
+  padding:14px 16px 12px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.topbar h1{flex:1;font-size:15px;font-weight:600;color:#fff;letter-spacing:-.2px}
+.tb-btn{background:rgba(255,255,255,.15);border:none;border-radius:50%;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
+.bottomnav{background:var(--surface);border-top:1px solid var(--border);
+  display:flex;flex-shrink:0;box-shadow:0 -4px 20px rgba(21,101,192,.08)}
+.navitem{flex:1;padding:10px 4px 12px;text-align:center;cursor:pointer}
+.navitem i{font-size:20px;display:block;margin-bottom:2px;color:var(--txt3)}
+.navitem span{font-size:10px;color:var(--txt3);font-weight:500}
+.navitem.active i,.navitem.active span{color:var(--blue)}
+.navitem.active{border-top:2px solid var(--blue)}
+.content{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
+.content::-webkit-scrollbar{display:none}
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);
+  padding:12px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .12s}
+.card:active{transform:scale(.985)}
+.card.open-card{border-left:3px solid var(--amber)}
+.badge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:600;white-space:nowrap;font-family:'DM Mono',monospace}
+.b-open{background:var(--amber-lt);color:var(--amber)}
+.b-closed{background:var(--green-lt);color:var(--green)}
+.b-inprogress{background:var(--blue-lt);color:var(--blue)}
+.role-pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.r-a{background:var(--purple-lt);color:var(--purple)}
+.r-l{background:var(--blue-lt);color:var(--blue)}
+.r-p{background:var(--green-lt);color:var(--green)}
+.r-ad{background:var(--amber-lt);color:var(--amber)}
+.type-pill{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:600}
+.field{margin-bottom:12px}
+.field label{font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;letter-spacing:.2px;text-transform:uppercase}
+.inp{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:var(--r-sm);
+  font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--txt);outline:none;transition:border-color .15s}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,.10)}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%235A6A7E' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+textarea.inp{resize:none;min-height:64px;line-height:1.5}
+.btn{width:100%;padding:13px;border:none;border-radius:var(--r-sm);font-size:14px;
+  font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));color:#fff;box-shadow:0 4px 14px rgba(21,101,192,.30)}
+.btn-success{background:var(--green-lt);color:var(--green);border:1px solid #A5D6A7}
+.btn-warn{background:var(--blue-lt);color:var(--blue);border:1px solid #90CAF9}
+.btn-danger{background:var(--red-lt);color:var(--red);border:1px solid #FFCDD2}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto;border-radius:7px}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--txt2);padding:10px 0 6px;
+  border-bottom:1px solid var(--border);margin-bottom:10px;letter-spacing:.4px;
+  text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:12px;box-shadow:var(--shadow-sm)}
+.stat-num{font-size:24px;font-weight:700;font-family:'DM Mono',monospace}
+.stat-lbl{font-size:11px;color:var(--txt3);margin-top:2px;font-weight:500}
+.filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+.filter-row::-webkit-scrollbar{display:none}
+.chip{padding:6px 13px;border-radius:20px;font-size:12px;white-space:nowrap;border:1px solid var(--border);
+  background:var(--surface);color:var(--txt2);cursor:pointer;font-weight:500;flex-shrink:0}
+.chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.hero{background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid),#42A5F5);
+  border-radius:var(--r);padding:16px;margin-bottom:14px;
+  display:flex;justify-content:space-between;align-items:center;
+  box-shadow:0 6px 20px rgba(21,101,192,.30);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.07)}
+.hero-num{font-size:28px;font-weight:700;color:#fff;font-family:'DM Mono',monospace;line-height:1}
+.hero-lbl{font-size:10px;color:#90CAF9;margin-top:3px;font-weight:500}
+.hero-div{width:1px;height:44px;background:rgba(255,255,255,.18)}
+.alert-box{background:var(--amber-lt);border:1px solid #FBC02D;border-radius:var(--r-sm);
+  padding:10px 13px;margin-bottom:12px;display:flex;align-items:center;gap:9px}
+.det-block{background:var(--surface);border-radius:var(--r-sm);border:1px solid var(--border);padding:12px;margin-bottom:8px;box-shadow:var(--shadow-sm)}
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.dv{font-size:13px;color:var(--txt);font-weight:500}
+.menu-wrap{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow-sm)}
+.menu-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.menu-row:last-child{border-bottom:none}
+.menu-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.toggle-box{width:36px;height:20px;background:var(--blue);border-radius:10px;position:relative;flex-shrink:0}
+.toggle-box::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;right:2px}
+.upload-box{border:1.5px dashed var(--border);border-radius:var(--r-sm);
+  padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;background:var(--bg)}
+.upload-box i{font-size:24px;color:var(--txt3)}
+.upload-box span{font-size:11px;color:var(--txt3);text-align:center;line-height:1.4}
+.user-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.user-row:last-child{border-bottom:none}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue-lt);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--blue);flex-shrink:0}
+.spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1A2535;color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;
+  font-weight:500;opacity:0;transition:all .3s;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#s-login{justify-content:center;align-items:center;padding:28px 24px;gap:18px;
+  background:linear-gradient(160deg,#0D47A1,#1565C0,#1976D2);min-height:100vh}
+.login-logo{width:72px;height:72px;background:rgba(255,255,255,.15);border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.20);border:1px solid rgba(255,255,255,.2)}
+.login-card{width:100%;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);
+  border-radius:var(--r);border:1px solid rgba(255,255,255,.15);padding:20px}
+.login-inp{width:100%;padding:11px 14px;border:1px solid rgba(255,255,255,.2);
+  border-radius:var(--r-sm);font-size:14px;font-family:'DM Sans',sans-serif;
+  background:rgba(255,255,255,.12);color:#fff;outline:none}
+.login-inp::placeholder{color:rgba(255,255,255,.4)}
+.login-inp:focus{border-color:rgba(255,255,255,.6)}
+.demo-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;
+  cursor:pointer;border-bottom:1px solid rgba(255,255,255,.08)}
+.demo-row:last-child{border-bottom:none}
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+  z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#lightbox.show{display:flex}
+#lightbox img{max-width:92%;max-height:75vh;border-radius:10px}
+#lb-close{color:#fff;font-size:13px;opacity:.7;cursor:pointer;padding:8px 22px;
+  border:1px solid rgba(255,255,255,.3);border-radius:20px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:390px;max-height:80vh;overflow-y:auto;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="s-login" class="screen active">
+  <div class="login-logo"><i class="ti ti-clipboard-check" style="font-size:32px;color:#fff"></i></div>
+  <div style="text-align:center">
+    <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px">Tekshiruv Nazorat</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Inspection Control System</div>
+  </div>
+  <div class="login-card">
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.4px">USERNAME</div>
+      <input class="login-inp" id="l-user" placeholder="foydalanuvchi nomi">
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.4px">PAROL</div>
+      <input class="login-inp" type="password" id="l-pass" placeholder="••••••">
+    </div>
+    <div id="l-err" style="font-size:12px;color:#FFCDD2;text-align:center;min-height:16px;margin-bottom:8px"></div>
+    <button id="login-btn" onclick="doLogin()" style="width:100%;padding:13px;border:none;border-radius:var(--r-sm);
+      background:#fff;color:var(--blue-dark);font-size:14px;font-weight:700;
+      font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span>Kirish</span><div class="spinner" id="login-spin" style="border-top-color:var(--blue-dark);border-color:rgba(21,101,192,.2)"></div>
+    </button>
+  </div>
+  <div style="width:100%;background:rgba(255,255,255,.07);border-radius:var(--r);border:1px solid rgba(255,255,255,.12);padding:14px">
+    <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);margin-bottom:8px;letter-spacing:.4px">DEMO FOYDALANUVCHILAR</div>
+    <div class="demo-row" onclick="setU('shavkat','1234')"><span style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">shavkat / 1234</span><span class="role-pill r-a">Yig'uvchi</span></div>
+    <div class="demo-row" onclick="setU('logistik','1234')"><span style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">logistik / 1234</span><span class="role-pill r-l">Logistika</span></div>
+    <div class="demo-row" onclick="setU('production','1234')"><span style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">production / 1234</span><span class="role-pill r-p">Production</span></div>
+    <div class="demo-row" onclick="setU('admin','admin')"><span style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">admin / admin</span><span class="role-pill r-ad">Admin</span></div>
+  </div>
+</div>
+
+<div id="s-main" class="screen">
+  <div class="topbar">
+    <div style="flex:1">
+      <div style="font-size:10px;color:#90CAF9">Xush kelibsiz,</div>
+      <div style="font-size:15px;font-weight:600;color:#fff" id="m-name">—</div>
+    </div>
+    <span id="m-role" class="role-pill r-a" style="font-size:11px;padding:3px 10px"></span>
+    <div class="tb-btn" style="margin-left:6px" onclick="goTab('profil')"><i class="ti ti-user" style="font-size:16px"></i></div>
+  </div>
+  <div class="content" id="main-content"></div>
+  <div class="bottomnav" id="bottomnav"></div>
+</div>
+
+<div id="s-detail" class="screen">
+  <div class="topbar">
+    <button class="tb-btn" onclick="back()" style="margin-right:4px"><i class="ti ti-arrow-left" style="font-size:18px"></i></button>
+    <h1>Batafsil</h1>
+    <span id="d-badge" class="badge b-open">Open</span>
+  </div>
+  <div class="content" id="detail-content"></div>
+</div>
+
+<div id="s-add" class="screen">
+  <div class="topbar">
+    <button class="tb-btn" onclick="goTab('home')" style="margin-right:4px"><i class="ti ti-arrow-left" style="font-size:18px"></i></button>
+    <h1>Yangi muammo</h1>
+  </div>
+  <div class="content">
+    <div class="sec-lbl"><i class="ti ti-info-circle" style="font-size:13px"></i>Asosiy ma'lumot</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Sana</label><input class="inp" type="date" id="a-date"></div>
+      <div class="field" style="margin:0"><label>Vaqt</label><input class="inp" type="time" id="a-time"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Liniya</label>
+        <select class="inp" id="a-line"><option>Trim</option><option>Chassis</option><option>Final</option></select></div>
+      <div class="field" style="margin:0"><label>Muammo turi</label>
+        <select class="inp" id="a-type"><option>Machine</option><option>Material</option><option>Man</option><option>Method</option></select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Stansiya</label><input class="inp" id="a-station" placeholder="T-01-01"></div>
+      <div class="field" style="margin:0"><label>Auditor</label>
+        <select class="inp" id="a-auditor"><option>Shavkat</option><option>Husan</option><option>Mirzohid</option><option>Maruf</option></select></div>
+    </div>
+    <div class="field"><label>Muammo tavsifi</label><textarea class="inp" id="a-prob" placeholder="Muammoni batafsil yozing..."></textarea></div>
+    <div class="field"><label>Harakat rejasi</label><textarea class="inp" id="a-action" placeholder="Harakat rejasini yozing..."></textarea></div>
+    <div class="sec-lbl"><i class="ti ti-photo" style="font-size:13px"></i>Rasmlar</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Before</label>
+        <div class="upload-box" id="box-before" onclick="document.getElementById('f-before').click()">
+          <i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span></div>
+        <input type="file" id="f-before" accept="image/*" style="display:none" onchange="prevImg('before',this)">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">After</label>
+        <div class="upload-box" id="box-after" onclick="document.getElementById('f-after').click()">
+          <i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span></div>
+        <input type="file" id="f-after" accept="image/*" style="display:none" onchange="prevImg('after',this)">
+      </div>
+    </div>
+    <div id="a-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-bottom:8px"></div>
+    <button class="btn btn-primary" id="save-btn" onclick="addRecord()">
+      <i class="ti ti-device-floppy" style="font-size:17px"></i>Saqlash
+      <div class="spinner" id="save-spin"></div>
+    </button>
+    <div style="height:24px"></div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="closeLB()">
+  <img id="lb-img" src="" alt=""><span id="lb-close">Yopish ✕</span>
+</div>
+<div id="add-user-modal" class="modal-overlay" onclick="if(event.target===this)closeUserModal()">
+  <div class="modal-sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:15px;font-weight:600;color:var(--txt)">Yangi foydalanuvchi</span>
+      <button onclick="closeUserModal()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
+    </div>
+    <div class="field"><label>Username</label><input class="inp" id="nu-user" placeholder="username"></div>
+    <div class="field"><label>Parol</label><input class="inp" type="password" id="nu-pass" placeholder="••••••"></div>
+    <div class="field"><label>To'liq ism</label><input class="inp" id="nu-name" placeholder="Ism Familiya"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Rol</label>
+        <select class="inp" id="nu-role">
+          <option value="assembler">Yig'uvchi</option>
+          <option value="logistics">Logistika</option>
+          <option value="production">Production</option>
+          <option value="admin">Admin</option>
+        </select></div>
+      <div class="field" style="margin:0"><label>Liniya</label><input class="inp" id="nu-line" placeholder="Trim"></div>
+    </div>
+    <div id="nu-err" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px"></div>
+    <button class="btn btn-primary" onclick="saveUser()"><i class="ti ti-user-plus" style="font-size:17px"></i>Saqlash</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const TC={Machine:'r-l',Material:'r-a',Man:'r-p',Method:'r-ad'};
+const RPILL={assembler:'r-a',logistics:'r-l',production:'r-p',admin:'r-ad'};
+const RLABEL={assembler:"Yig'uvchi",logistics:'Logistika',production:'Production',admin:'Admin'};
+let ME=null, curTab='home', curFilter='all';
+
+function $(id){return document.getElementById(id)}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
+function toast(msg,ok=true){const t=$('toast');t.textContent=msg;t.style.background=ok?'#1A2535':'var(--red)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+function setU(u,p){$('l-user').value=u;$('l-pass').value=p}
+function spin(id,on){$(id).style.display=on?'block':'none'}
+function back(){showScreen('s-main');curTab==='list'?renderList():renderHome()}
+
+async function doLogin(){
+  const u=$('l-user').value.trim(),p=$('l-pass').value.trim();
+  $('l-err').textContent='';spin('login-spin',true);$('login-btn').disabled=true;
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(!r.ok){$('l-err').textContent=d.error;return}
+    ME=d.user;
+    $('m-name').textContent=ME.name;
+    $('m-role').textContent=ME.roleLabel;
+    $('m-role').className='role-pill '+RPILL[ME.role];
+    $('m-role').style.cssText='font-size:11px;padding:3px 10px';
+    buildNav();showScreen('s-main');renderHome();
+  }catch(e){$('l-err').textContent='Server bilan bog\'lanib bo\'lmadi'}
+  finally{spin('login-spin',false);$('login-btn').disabled=false;}
+}
+$('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+async function doLogout(){await fetch('/api/logout',{method:'POST'});ME=null;curTab='home';curFilter='all';showScreen('s-login')}
+
+function buildNav(){
+  const isAdmin=ME.role==='admin';
+  const canAdd=ME.role==='assembler'||isAdmin;
+  const tabs=[
+    {id:'home',  icon:'ti-layout-dashboard',label:'Bosh sahifa'},
+    {id:'list',  icon:'ti-list',            label:'Muammolar'},
+    ...(canAdd?[{id:'add',icon:'ti-circle-plus',label:"Qo'shish"}]:[]),
+    ...(isAdmin?[{id:'users',icon:'ti-users',label:'Foydalanuvchilar'}]:[]),
+    {id:'profil',icon:'ti-user',            label:'Profil'},
+  ];
+  $('bottomnav').innerHTML=tabs.map(t=>`
+    <div class="navitem${t.id===curTab?' active':''}" onclick="goTab('${t.id}')">
+      <i class="ti ${t.icon}"></i><span>${t.label}</span>
+    </div>`).join('');
+}
+
+async function goTab(t){
+  curTab=t;buildNav();
+  if(t==='add'){initAdd();showScreen('s-add');return}
+  showScreen('s-main');
+  if(t==='home') renderHome();
+  else if(t==='list') renderList();
+  else if(t==='profil') renderProfil();
+  else if(t==='users') renderUsers();
+}
+
+async function api(url,opts={}){
+  try{
+    const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
+    if(r.status===401){showScreen('s-login');return null}
+    return r.json();
+  }catch(e){toast('Tarmoq xatosi',false);return null}
+}
+
+async function renderHome(){
+  const [stats,recs]=await Promise.all([api('/api/stats'),api('/api/records')]);
+  if(!stats||!recs) return;
+  const roleMsg={assembler:"Siz kiritgan muammolar",logistics:"Logistikaga tegishli",production:"Barcha muammolar",admin:"Tizim — barcha yozuvlar"};
+  $('main-content').innerHTML=`
+    <div class="hero">
+      <div><div class="hero-num">${stats.total}</div><div class="hero-lbl">${roleMsg[ME.role]||''}</div></div>
+      <div class="hero-div"></div>
+      <div style="text-align:center"><div class="hero-num" style="color:#FFD54F">${stats.open}</div><div class="hero-lbl" style="color:#FFCC80">Open</div></div>
+      <div class="hero-div"></div>
+      <div style="text-align:right"><div class="hero-num" style="color:#81C784">${stats.closed}</div><div class="hero-lbl" style="color:#A5D6A7">Closed</div></div>
+    </div>
+    ${stats.open>0?`<div class="alert-box"><i class="ti ti-alert-triangle" style="font-size:20px;color:var(--amber);flex-shrink:0"></i><div><div style="font-size:12px;font-weight:600;color:var(--amber)">${stats.open} ta hal qilinmagan muammo</div><div style="font-size:11px;color:#E65100;margin-top:1px">Tezda ko'rib chiqing!</div></div></div>`:''}
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:9px;letter-spacing:.3px;text-transform:uppercase">So'nggi muammolar</div>
+    ${[...recs].reverse().slice(0,4).map(r=>card(r)).join('')}
+    <div style="text-align:center;padding:6px 0 2px"><span style="font-size:13px;color:var(--blue);font-weight:600;cursor:pointer" onclick="goTab('list')">Barchasini ko'rish →</span></div>`;
+}
+
+async function renderList(f){
+  if(f) curFilter=f;
+  const recs=await api('/api/records'); if(!recs) return;
+  let filtered=recs;
+  if(curFilter==='open') filtered=recs.filter(x=>x.status==='open');
+  else if(curFilter==='closed') filtered=recs.filter(x=>x.status==='closed');
+  else if(['Trim','Chassis','Final'].includes(curFilter)) filtered=recs.filter(x=>x.line===curFilter);
+  $('main-content').innerHTML=`
+    <div class="filter-row">
+      ${['all','open','closed','Trim','Chassis','Final'].map(x=>`<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${x==='all'?`Hammasi (${recs.length})`:x}</div>`).join('')}
+    </div>
+    ${[...filtered].reverse().map(r=>card(r)).join('')}
+    ${!filtered.length?'<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px">Muammo topilmadi</div>':''}`;
+}
+
+function card(r){
+  return `<div class="card${r.status==='open'?' open-card':''}" onclick="showDetail(${r.id})">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600;color:var(--txt)">${r.line} · ${r.station}</span>
+        <span class="type-pill ${TC[r.type]||'r-ad'}">${r.type}</span>
+      </div>
+      <span class="badge ${r.status==='open'?'b-open':r.status==='inprogress'?'b-inprogress':'b-closed'}">${r.status==='open'?'Open':r.status==='inprogress'?'Jarayonda':'Closed'}</span>
+    </div>
+    <div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:6px">${r.problem.replace(/\n/g,' ').substring(0,65)}${r.problem.length>65?'...':''}</div>
+    ${r.imgBefore||r.imgAfter?`<div style="display:flex;gap:5px;margin:5px 0">
+      ${r.imgBefore?`<img src="${r.imgBefore}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid var(--border)" onclick="event.stopPropagation();openLB('${r.imgBefore}')" alt="before">`:''}
+      ${r.imgAfter?`<img src="${r.imgAfter}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid var(--border)" onclick="event.stopPropagation();openLB('${r.imgAfter}')" alt="after">`:''}
+    </div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div style="display:flex;align-items:center;gap:4px"><i class="ti ti-user" style="font-size:12px;color:var(--txt3)"></i><span style="font-size:11px;color:var(--txt3)">${r.auditor}</span></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${r.date}</span>
+        <span style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${r.time}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function showDetail(id){
+  const r=await api(`/api/records/${id}`); if(!r||r.error) return;
+  const me=await api('/api/me'); if(!me) return;
+  const rc=me.roleCfg;
+  const db=$('d-badge');
+  db.textContent=r.status==='open'?'Open':r.status==='inprogress'?'Jarayonda':'Closed';
+  db.className='badge '+(r.status==='open'?'b-open':r.status==='inprogress'?'b-inprogress':'b-closed');
+  $('detail-content').innerHTML=`
+    <div class="det-block"><div class="det-grid">
+      <div><div class="dl">Sana</div><div class="dv" style="font-family:'DM Mono',monospace">${r.date}</div></div>
+      <div><div class="dl">Vaqt</div><div class="dv" style="font-family:'DM Mono',monospace">${r.time||'—'}</div></div>
+      <div><div class="dl">Liniya</div><div class="dv">${r.line}</div></div>
+      <div><div class="dl">Stansiya</div><div class="dv">${r.station}</div></div>
+      <div><div class="dl">Muammo turi</div><div class="dv"><span class="type-pill ${TC[r.type]||'r-ad'}">${r.type}</span></div></div>
+      <div><div class="dl">Auditor</div><div class="dv">${r.auditor}</div></div>
+    </div></div>
+    <div class="det-block"><div class="dl" style="margin-bottom:5px">Muammo tavsifi</div><div class="dv" style="line-height:1.6;white-space:pre-line">${r.problem}</div></div>
+    <div class="det-block"><div class="dl" style="margin-bottom:5px">Harakat rejasi</div><div class="dv" style="line-height:1.6">${r.action}</div></div>
+    ${r.imgBefore||r.imgAfter?`<div class="det-block"><div class="dl" style="margin-bottom:8px">Rasmlar</div>
+      <div style="display:flex;gap:12px">
+        ${r.imgBefore?`<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">BEFORE</div><img src="${r.imgBefore}" onclick="openLB('${r.imgBefore}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>`:''}
+        ${r.imgAfter?`<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">AFTER</div><img src="${r.imgAfter}" onclick="openLB('${r.imgAfter}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>`:''}
+      </div></div>`:''}
+    ${rc.canAction&&r.status!=='closed'?`
+    <div class="det-block">
+      <div class="dl" style="margin-bottom:7px">Harakat rejasini yangilash</div>
+      <textarea class="inp" id="upd-action" style="margin-bottom:8px">${r.action}</textarea>
+      <div style="display:flex;gap:7px">
+        ${r.status==='open'?`<button class="btn btn-warn" style="padding:10px" onclick="setStatus(${r.id},'inprogress')"><i class="ti ti-loader" style="font-size:15px"></i>Jarayonda</button>`:''}
+        ${rc.canClose?`<button class="btn btn-success" style="padding:10px" onclick="setStatus(${r.id},'closed')"><i class="ti ti-check" style="font-size:15px"></i>Yopish</button>`:''}
+      </div>
+    </div>`:''}
+    ${r.status==='closed'?`<div style="background:var(--green-lt);border-radius:var(--r-sm);border:1px solid #A5D6A7;padding:13px;display:flex;align-items:center;gap:10px"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green)"></i><div><div style="font-size:13px;font-weight:600;color:var(--green)">Muammo yopilgan</div><div style="font-size:11px;color:var(--green);opacity:.8;margin-top:1px">Hal qilindi</div></div></div>`:''}
+    <div style="height:20px"></div>`;
+  showScreen('s-detail');
+}
+
+async function setStatus(id,st){
+  const action=$('upd-action')?.value||'';
+  const r=await api(`/api/records/${id}`,{method:'PATCH',body:JSON.stringify({status:st,action})});
+  if(r&&!r.error){toast(st==='closed'?'Yopildi ✓':'Jarayonda belgulandi');showDetail(id)}
+  else toast(r?.error||'Xato',false);
+}
+
+async function renderProfil(){
+  const [stats,me]=await Promise.all([api('/api/stats'),api('/api/me')]); if(!stats||!me) return;
+  const pct=stats.total?Math.round(stats.closed/stats.total*100):0;
+  $('main-content').innerHTML=`
+    <div style="background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border-radius:var(--r);padding:18px;margin-bottom:14px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(21,101,192,.25)">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff">${me.name.slice(0,2).toUpperCase()}</div>
+      <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:#fff">${me.name}</div><div style="font-size:11px;color:#90CAF9;margin-top:2px">${me.line}</div></div>
+      <span class="role-pill ${RPILL[me.role]}" style="font-size:12px;padding:4px 14px">${me.roleLabel}</span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num">${stats.total}</div><div class="stat-lbl">Ko'rinadigan yozuvlar</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${stats.open}</div><div class="stat-lbl">Ochiq muammolar</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${stats.closed}</div><div class="stat-lbl">Yopilgan</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${pct}%</div><div class="stat-lbl">Hal qilish darajasi</div></div>
+    </div>
+    <div style="background:var(--surface);border-radius:var(--r-sm);border:1px solid var(--border);padding:12px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--txt2);font-weight:600">Hal qilish darajasi</span><span style="font-size:12px;font-weight:700;color:var(--blue);font-family:'DM Mono',monospace">${pct}%</span></div>
+      <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid));border-radius:4px"></div></div>
+    </div>
+    <div class="menu-wrap" style="margin-bottom:12px">
+      <div class="menu-row"><div class="menu-icon" style="background:var(--blue-lt)"><i class="ti ti-user" style="font-size:17px;color:var(--blue)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">${me.name}</div><div style="font-size:11px;color:var(--txt3)">${me.username} · ${me.line}</div></div></div>
+      <div class="menu-row"><div class="menu-icon" style="background:var(--purple-lt)"><i class="ti ti-shield" style="font-size:17px;color:var(--purple)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">Rol</div><div style="font-size:11px;color:var(--txt3)">${me.roleLabel}</div></div></div>
+    </div>
+    <button class="btn btn-danger" onclick="doLogout()"><i class="ti ti-logout" style="font-size:17px"></i>Tizimdan chiqish</button>
+    <div style="height:20px"></div>`;
+}
+
+async function renderUsers(){
+  const users=await api('/api/users'); if(!users) return;
+  $('main-content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px">Foydalanuvchilar (${users.length})</div>
+      <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="ti ti-user-plus" style="font-size:14px"></i>Yangi</button>
+    </div>
+    <div class="menu-wrap">
+      ${users.map(u=>`
+        <div class="user-row">
+          <div class="user-avatar">${u.full_name.slice(0,2).toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--txt)">${u.full_name}</div>
+            <div style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${u.username} · ${u.line||'—'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="role-pill ${RPILL[u.role]}">${RLABEL[u.role]}</span>
+            <button onclick="deleteUser(${u.id},'${u.username}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-trash" style="font-size:16px;color:var(--txt3)"></i></button>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="height:20px"></div>`;
+}
+
+function openUserModal(){$('add-user-modal').classList.add('show')}
+function closeUserModal(){$('add-user-modal').classList.remove('show');$('nu-err').textContent=''}
+
+async function saveUser(){
+  const u=$('nu-user').value.trim(),p=$('nu-pass').value.trim(),n=$('nu-name').value.trim(),r=$('nu-role').value,l=$('nu-line').value.trim();
+  if(!u||!p||!n){$('nu-err').textContent='Barcha maydonlarni kiriting';return}
+  const res=await api('/api/users',{method:'POST',body:JSON.stringify({username:u,password:p,full_name:n,role:r,line:l})});
+  if(!res||res.error){$('nu-err').textContent=res?.error||'Xato';return}
+  toast("Foydalanuvchi qo'shildi ✓");closeUserModal();
+  $('nu-user').value='';$('nu-pass').value='';$('nu-name').value='';$('nu-line').value='';
+  renderUsers();
+}
+
+async function deleteUser(id,username){
+  if(!confirm(`"${username}" ni o'chirishni tasdiqlaysizmi?`)) return;
+  const r=await api(`/api/users/${id}`,{method:'DELETE'});
+  if(r?.ok){toast("O'chirildi");renderUsers()}
+  else toast(r?.error||'Xato',false);
+}
+
+function initAdd(){
+  const d=new Date();
+  $('a-date').value=d.toISOString().split('T')[0];
+  $('a-time').value=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  ['before','after'].forEach(k=>{
+    $('box-'+k).innerHTML=`<i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span>`;
+    $('f-'+k).value='';
+  });
+  $('a-station').value='';$('a-prob').value='';$('a-action').value='';
+  $('a-err').textContent='';
+}
+
+function prevImg(k,input){
+  const file=input.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=e=>{$('box-'+k).innerHTML=`<img src="${e.target.result}" style="width:100%;height:88px;object-fit:cover;border-radius:7px"><div style="font-size:10px;color:var(--green);margin-top:4px;font-weight:600">✓ Yuklandi</div>`};
+  r.readAsDataURL(file);
+}
+
+async function addRecord(){
+  const station=$('a-station').value.trim(), prob=$('a-prob').value.trim();
+  if(!station||!prob){$('a-err').textContent='Stansiya va muammo tavsifini kiriting';return}
+  spin('save-spin',true);$('save-btn').disabled=true;
+  const fd=new FormData();
+  fd.append('date',$('a-date').value);fd.append('time',$('a-time').value);
+  fd.append('line',$('a-line').value);fd.append('type',$('a-type').value);
+  fd.append('station',station);fd.append('auditor',$('a-auditor').value);
+  fd.append('problem',prob);fd.append('action',$('a-action').value);
+  const fb=$('f-before').files[0], fa=$('f-after').files[0];
+  if(fb) fd.append('imgBefore',fb);
+  if(fa) fd.append('imgAfter',fa);
+  try{
+    const r=await fetch('/api/records',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok){$('a-err').textContent=d.error;return}
+    toast('Muvaffaqiyatli saqlandi ✓');
+    curTab='list';buildNav();showScreen('s-main');renderList('all');
+  }catch(e){$('a-err').textContent='Xato yuz berdi'}
+  finally{spin('save-spin',false);$('save-btn').disabled=false;}
+}
+
+function openLB(src){$('lb-img').src=src;$('lightbox').classList.add('show')}
+function closeLB(){$('lightbox').classList.remove('show')}
+</script>
+</body>
+</html>
