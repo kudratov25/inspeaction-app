@@ -40,6 +40,11 @@ async function initDB() {
       );
     `);
 
+    await client.query(`
+      ALTER TABLE records ADD COLUMN IF NOT EXISTS deadline DATE;
+      ALTER TABLE records ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false;
+    `);
+
     // Seed default users if table is empty
     const { rowCount } = await client.query('SELECT 1 FROM users LIMIT 1');
     if (rowCount === 0) {
