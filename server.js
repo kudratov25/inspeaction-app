@@ -44,7 +44,7 @@ app.use(session({
 // ─── Role config ───────────────────────────────────────────────
 const ROLES = {
   assembler:  { label: "Yig'uvchi", canAdd: true,  canClose: false, canAction: false, filter: 'own' },
-  logistics:  { label: 'Logistika', canAdd: false, canClose: false, canAction: true,  filter: 'logistics' },
+  logistics:  { label: 'Logistika', canAdd: false, canClose: true,  canAction: true,  filter: 'logistics' },
   production: { label: 'Production',canAdd: false, canClose: true,  canAction: true,  filter: 'all' },
   admin:      { label: 'Admin',     canAdd: true,  canClose: true,  canAction: true,  filter: 'all' },
 };
@@ -114,6 +114,13 @@ app.get('/api/config', (req, res) => {
   res.json({ demo: process.env.NODE_ENV !== 'production' });
 });
 
+app.get('/api/assemblers', auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT full_name FROM users WHERE role='assembler' ORDER BY full_name");
+    res.json(rows.map(r => r.full_name));
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server xatosi' }); }
+});
+
 // ══════════════════════════════════════════════════════════════
 //  RECORDS ROUTES
 // ══════════════════════════════════════════════════════════════
@@ -170,20 +177,25 @@ app.patch('/api/records/:id', auth, async (req, res) => {
     const rc = ROLES[u.role];
     if (!rc?.canAction) return res.status(403).json({ error: 'Ruxsat yo\'q' });
     const { status, action, deadline, is_recurring } = req.body;
-    if (status === 'closed' && !rc.canClose) return res.status(403).json({ error: 'Yopish ruxsati yo\'q' });
     if (status === 'closed') {
-      const ex = await pool.query('SELECT action FROM records WHERE id = $1', [req.params.id]);
-      const finalAction = action?.trim() || ex.rows[0]?.action;
+      if (!rc.canClose) return res.status(403).json({ error: 'Yopish ruxsati yo\'q' });
+      const ex = await pool.query('SELECT action, dept FROM records WHERE id = $1', [req.params.id]);
+      if (!ex.rows.length) return res.status(404).json({ error: 'Topilmadi' });
+      if (u.role === 'logistics' && ex.rows[0].dept !== 'logistics') {
+        return res.status(403).json({ error: 'Siz faqat logistics muammolarini yopa olasiz' });
+      }
+      const finalAction = action?.trim() || ex.rows[0].action;
       if (!finalAction || finalAction === '—' || !finalAction.trim()) {
         return res.status(400).json({ error: 'Yopish uchun harakat rejasi kiritilishi shart' });
       }
     }
     const sets = ['updated_at = NOW()'];
     const vals = [];
-    if (status)                  { vals.push(status);       sets.push(`status = $${vals.length}`); }
-    if (action !== undefined)    { vals.push(action || '—');sets.push(`action = $${vals.length}`); }
-    if (deadline !== undefined)  { vals.push(deadline || null); sets.push(`deadline = $${vals.length}`); }
-    if (is_recurring !== undefined) { vals.push(is_recurring); sets.push(`is_recurring = $${vals.length}`); }
+    if (status)                     { vals.push(status);        sets.push(`status = $${vals.length}`); }
+    if (action !== undefined)       { vals.push(action || '—'); sets.push(`action = $${vals.length}`); }
+    if (deadline !== undefined)     { vals.push(deadline || null); sets.push(`deadline = $${vals.length}`); }
+    if (is_recurring !== undefined) { vals.push(is_recurring);  sets.push(`is_recurring = $${vals.length}`); }
+    if (status === 'closed')        { vals.push(u.username);    sets.push(`resolved_by = $${vals.length}`); }
     vals.push(req.params.id);
     const { rows } = await pool.query(`UPDATE records SET ${sets.join(',')} WHERE id = $${vals.length} RETURNING *`, vals);
     if (!rows.length) return res.status(404).json({ error: 'Topilmadi' });
@@ -302,6 +314,7 @@ function dbToClient(r) {
     imgAfter:    r.img_after,
     deadline,
     isRecurring: r.is_recurring || false,
+    resolvedBy:  r.resolved_by  || null,
     daysLeft,
     isRisky,
     isOverdue,

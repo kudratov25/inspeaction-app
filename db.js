@@ -43,6 +43,7 @@ async function initDB() {
     await client.query(`
       ALTER TABLE records ADD COLUMN IF NOT EXISTS deadline DATE;
       ALTER TABLE records ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false;
+      ALTER TABLE records ADD COLUMN IF NOT EXISTS resolved_by VARCHAR(50);
     `);
 
     // Seed default users if table is empty

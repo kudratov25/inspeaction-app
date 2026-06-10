@@ -779,14 +779,19 @@
     .card.risky-card { border-left: 3px solid var(--amber) }
     .card.overdue-card { border-left: 3px solid var(--red) }
 
+    .topbar-wrap { position: relative; flex-shrink: 0; z-index: 200; }
     .notif-panel {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
       background: var(--surface);
       border-bottom: 2px solid var(--border);
+      box-shadow: 0 8px 28px rgba(0,0,0,.13);
       max-height: 0;
       overflow: hidden;
-      transition: max-height .3s ease
+      transition: max-height .3s ease;
+      z-index: 200;
     }
-    .notif-panel.show { max-height: 60vh; overflow-y: auto }
+    .notif-panel.show { max-height: 60vh; overflow-y: auto; }
     .notif-item {
       padding: 11px 14px;
       border-bottom: 1px solid var(--border);
@@ -829,9 +834,28 @@
       border-radius: 3px;
       background: linear-gradient(90deg, var(--blue-dark), var(--blue-mid))
     }
-    .lang-sw { display:flex; gap:3px; align-items:center; }
-    .lang-btn { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(255,255,255,.12); border:none; border-radius:5px; padding:3px 7px; cursor:pointer; letter-spacing:.3px; transition:all .15s; }
-    .lang-btn.active { color:#fff; background:rgba(255,255,255,.28); }
+    .lang-sw { display:flex; align-items:center; background:rgba(0,0,0,.22); border-radius:10px; padding:2px; gap:0; }
+    .lang-btn { font-size:10px; font-weight:700; color:rgba(255,255,255,.45); background:transparent; border:none; border-radius:8px; padding:5px 10px; cursor:pointer; letter-spacing:.6px; transition:all .18s; line-height:1; }
+    .lang-btn:not(.active):hover { color:rgba(255,255,255,.8); }
+    .lang-btn.active { color:var(--blue-dark); background:rgba(255,255,255,.93); box-shadow:0 1px 5px rgba(0,0,0,.18); }
+    .lang-panel {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 8px 28px rgba(0,0,0,.13);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .25s ease;
+      z-index: 200;
+    }
+    .lang-panel.show { max-height: 220px; }
+    .lang-opt { display:flex; justify-content:space-between; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+    .lang-opt:last-child { border-bottom:none; }
+    .lang-opt:active { background:var(--bg); }
+    .lang-opt.lang-active .lang-opt-label { color:var(--blue); font-weight:700; }
+    .lang-trigger { background:rgba(255,255,255,.15); border:none; border-radius:10px; height:34px; padding:0 11px; display:flex; align-items:center; gap:5px; cursor:pointer; color:#fff; font-size:11px; font-weight:700; letter-spacing:.5px; transition:background .15s; }
+    .lang-trigger:active { background:rgba(255,255,255,.25); }
     .export-row { display:flex; gap:8px; padding:0 14px 10px; }
     .export-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding:9px 0; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-sm); font-size:12px; font-weight:600; color:var(--txt); cursor:pointer; transition:all .15s; }
     .export-btn:hover { border-color:var(--blue); color:var(--blue); }
@@ -851,7 +875,7 @@
         <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px">Tekshiruv Nazorat</div>
         <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Inspection Control System</div>
       </div>
-      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:4px">
+      <div class="lang-sw" style="margin-bottom:4px">
         <button class="lang-btn" onclick="changeLang('uz')" id="ll-uz">UZ</button>
         <button class="lang-btn" onclick="changeLang('ru')" id="ll-ru">RU</button>
         <button class="lang-btn" onclick="changeLang('en')" id="ll-en">EN</button>
@@ -893,26 +917,30 @@
     </div>
 
     <div id="s-main" class="screen">
-      <div class="topbar">
-        <div style="flex:1">
-          <div style="font-size:10px;color:#90CAF9" id="m-welcome">Xush kelibsiz,</div>
-          <div style="font-size:15px;font-weight:600;color:#fff" id="m-name">—</div>
+      <div class="topbar-wrap">
+        <div class="topbar">
+          <div style="flex:1">
+            <div style="font-size:10px;color:#90CAF9" id="m-welcome">Xush kelibsiz,</div>
+            <div style="font-size:15px;font-weight:600;color:#fff" id="m-name">—</div>
+          </div>
+          <span id="m-role" class="role-pill r-a" style="font-size:11px;padding:3px 10px"></span>
+          <button class="lang-trigger" id="lang-trigger" onclick="toggleLangPanel()" style="margin-left:4px">
+            <i class="ti ti-language" style="font-size:15px;opacity:.8"></i>
+            <span id="lang-current">UZ</span>
+          </button>
+          <div class="tb-btn notif-bell" style="margin-left:4px" onclick="toggleNotifPanel()">
+            <i class="ti ti-bell" style="font-size:16px"></i>
+            <div class="notif-dot" id="notif-dot"></div>
+          </div>
+          <div class="tb-btn" style="margin-left:2px" onclick="goTab('profil')"><i class="ti ti-user"
+              style="font-size:16px"></i></div>
         </div>
-        <span id="m-role" class="role-pill r-a" style="font-size:11px;padding:3px 10px"></span>
-        <div class="lang-sw" id="lang-sw">
-          <button class="lang-btn" onclick="changeLang('uz')">UZ</button>
-          <button class="lang-btn" onclick="changeLang('ru')">RU</button>
-          <button class="lang-btn" onclick="changeLang('en')">EN</button>
+        <div class="lang-panel" id="lang-panel">
+          <div id="lang-list"></div>
         </div>
-        <div class="tb-btn notif-bell" style="margin-left:4px" onclick="toggleNotifPanel()">
-          <i class="ti ti-bell" style="font-size:16px"></i>
-          <div class="notif-dot" id="notif-dot"></div>
+        <div class="notif-panel" id="notif-panel">
+          <div id="notif-list" style="padding:4px 0"></div>
         </div>
-        <div class="tb-btn" style="margin-left:2px" onclick="goTab('profil')"><i class="ti ti-user"
-            style="font-size:16px"></i></div>
-      </div>
-      <div class="notif-panel" id="notif-panel">
-        <div id="notif-list" style="padding:4px 0"></div>
       </div>
       <div class="content" id="main-content"></div>
       <div class="bottomnav" id="bottomnav"></div>
@@ -935,6 +963,7 @@
         <h1 id="add-title">Yangi muammo</h1>
       </div>
       <div class="content">
+        <div id="a-role-hint"></div>
         <div class="sec-lbl" id="add-sec-basic"><i class="ti ti-info-circle" style="font-size:13px"></i>Asosiy ma'lumot</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
           <div class="field" style="margin:0"><label id="lbl-date">Sana</label><input class="inp" type="date" id="a-date"></div>
@@ -954,28 +983,27 @@
               <option>Material</option>
               <option>Man</option>
               <option>Method</option>
+              <option>Measurement</option>
+              <option>Quality</option>
+              <option>Change</option>
+              <option>Safety Issue</option>
             </select>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
           <div class="field" style="margin:0"><label id="lbl-station">Stansiya</label><input class="inp" id="a-station" placeholder="T-01-01"></div>
           <div class="field" style="margin:0"><label id="lbl-auditor">Auditor</label>
-            <select class="inp" id="a-auditor">
-              <option>Shavkat</option>
-              <option>Husan</option>
-              <option>Mirzohid</option>
-              <option>Maruf</option>
-            </select>
+            <select class="inp" id="a-auditor"></select>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div id="a-deadline-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
           <div class="field" style="margin:0"><label id="lbl-deadline">Muddat</label><input class="inp" type="date" id="a-deadline"></div>
           <div class="field" style="margin:0"><label>&nbsp;</label>
             <div style="font-size:11px;color:var(--txt3);padding-top:8px;line-height:1.4" id="lbl-deadline-hint">Muammo yopilishi kerak bo'lgan sana</div>
           </div>
         </div>
         <div class="field"><label id="lbl-problem">Muammo tavsifi</label><textarea class="inp" id="a-prob" placeholder="Muammoni batafsil yozing..."></textarea></div>
-        <div class="field"><label id="lbl-action">Harakat rejasi</label><textarea class="inp" id="a-action" placeholder="Harakat rejasini yozing..."></textarea></div>
+        <div id="a-action-wrap" class="field"><label id="lbl-action">Harakat rejasi</label><textarea class="inp" id="a-action" placeholder="Harakat rejasini yozing..."></textarea></div>
         <div class="sec-lbl" id="add-sec-photos"><i class="ti ti-photo" style="font-size:13px"></i>Rasmlar</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
           <div>
@@ -985,7 +1013,7 @@
             </div>
             <input type="file" id="f-before" accept="image/*" style="display:none" onchange="prevImg('before',this)">
           </div>
-          <div>
+          <div id="a-after-wrap">
             <label id="lbl-after" style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Keyin</label>
             <div class="upload-box" id="box-after" onclick="document.getElementById('f-after').click()">
               <i class="ti ti-cloud-upload"></i><span id="upload-after-txt">Rasm yuklash</span>
@@ -1057,10 +1085,28 @@
         <div style="height:8px"></div>
       </div>
     </div>
+    <div id="quick-close-modal" class="modal-overlay" onclick="if(event.target===this)closeQuickClose()">
+      <div class="modal-sheet">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:15px;font-weight:600;color:var(--txt)" id="qc-title">Muammoni yopish</span>
+          <button onclick="closeQuickClose()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
+        </div>
+        <div class="field">
+          <label id="qc-label">Harakat rejasi *</label>
+          <textarea class="inp" id="qc-action" rows="3" placeholder="Hal qilish tavsifini yozing..."></textarea>
+        </div>
+        <div id="qc-err" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px"></div>
+        <button class="btn btn-success" onclick="confirmQuickClose()">
+          <i class="ti ti-check" style="font-size:17px"></i>
+          <span id="qc-confirm-txt">Yopish ✓</span>
+        </button>
+        <div style="height:8px"></div>
+      </div>
+    </div>
     <div class="toast" id="toast"></div>
 
     <script>
-      const TC = { Machine: 'r-l', Material: 'r-a', Man: 'r-p', Method: 'r-ad' };
+      const TC = { Machine: 'r-l', Material: 'r-a', Man: 'r-p', Method: 'r-ad', Measurement: 'r-l', Quality: 'r-p', Change: 'r-ad', 'Safety Issue': 'r-a' };
       const RPILL = { assembler: 'r-a', logistics: 'r-l', production: 'r-p', admin: 'r-ad' };
       let ME = null, curTab = 'home', curFilter = 'all', NOTIFS = [];
 
@@ -1106,6 +1152,13 @@
           cantDeleteSelf:"O'zingizni o'chira olmaysiz",
           exportExcel:'Excel', exportWord:'Word', exportTitle:'Yuklab olish',
           noRecords:'Muammo topilmadi', searchPlaceholder:"Qidirish...",
+          addHintAssembler:"Siz muammo topshirmoqdasiz. Logistika yoki Production bo'limi harakat rejasini belgilaydi.",
+          addHintAdmin:"To'liq muammo qo'shilmoqda. Barcha maydonlarni to'ldiring.",
+          tasks:"Vazifalarim", taskSectionNew:"Yangi muammolar", taskSectionInProgress:"Jarayondagi",
+          tasksDone:"Barcha vazifalar bajarildi ✓", tasksDoneHint:"Hamma narsa tartibda",
+          quickAcceptBtn:"Qabul qilish", respDept:"Mas'ul bo'lim", resolvedBy:"Hal qildi",
+          deptLogistics:"Logistika", deptProduction:"Production",
+          quickCloseTitle:"Muammoni yopish", qcLabel:"Harakat rejasi",
         },
         ru: {
           roleLabel: { assembler:'Сборщик', logistics:'Логистика', production:'Производство', admin:'Админ' },
@@ -1147,6 +1200,13 @@
           cantDeleteSelf:'Нельзя удалить себя',
           exportExcel:'Excel', exportWord:'Word', exportTitle:'Скачать',
           noRecords:'Проблем не найдено', searchPlaceholder:'Поиск...',
+          addHintAssembler:"Вы отправляете проблему. Логистика или Производство назначат план действий.",
+          addHintAdmin:"Добавление полной записи. Заполните все поля.",
+          tasks:"Мои задачи", taskSectionNew:"Новые задачи", taskSectionInProgress:"В процессе",
+          tasksDone:"Все задачи выполнены ✓", tasksDoneHint:"Всё в порядке",
+          quickAcceptBtn:"Принять", respDept:"Ответственный", resolvedBy:"Решил",
+          deptLogistics:"Логистика", deptProduction:"Производство",
+          quickCloseTitle:"Закрыть проблему", qcLabel:"План действий",
         },
         en: {
           roleLabel: { assembler:'Assembler', logistics:'Logistics', production:'Production', admin:'Admin' },
@@ -1188,6 +1248,13 @@
           cantDeleteSelf:"Can't delete yourself",
           exportExcel:'Excel', exportWord:'Word', exportTitle:'Download',
           noRecords:'No issues found', searchPlaceholder:'Search...',
+          addHintAssembler:"You are submitting an issue. Logistics or Production will set the action plan.",
+          addHintAdmin:"Adding a full record. Fill in all fields.",
+          tasks:"My Tasks", taskSectionNew:"New Issues", taskSectionInProgress:"In Progress",
+          tasksDone:"All tasks completed ✓", tasksDoneHint:"Everything is on track",
+          quickAcceptBtn:"Accept", respDept:"Responsible", resolvedBy:"Resolved by",
+          deptLogistics:"Logistics", deptProduction:"Production",
+          quickCloseTitle:"Close Issue", qcLabel:"Action Plan",
         },
       };
       let LANG = localStorage.getItem('lang') || 'uz';
@@ -1217,10 +1284,40 @@
       function setU(u, p) { $('l-user').value = u; $('l-pass').value = p }
       function spin(id, on) { $(id).style.display = on ? 'block' : 'none' }
       function closeNotifPanel() { $('notif-panel').classList.remove('show'); }
+      function closeLangPanel()  { $('lang-panel').classList.remove('show'); }
+
+      function toggleLangPanel() {
+        const panel = $('lang-panel');
+        const open  = panel.classList.contains('show');
+        closeNotifPanel();
+        if (!open) { renderLangPanel(); panel.classList.add('show'); }
+        else panel.classList.remove('show');
+      }
+
+      function renderLangPanel() {
+        const langs = [
+          { code:'uz', label:"O'zbek",  flag:'🇺🇿' },
+          { code:'ru', label:'Русский', flag:'🇷🇺' },
+          { code:'en', label:'English', flag:'🇬🇧' },
+        ];
+        $('lang-list').innerHTML = langs.map(l => `
+          <div class="lang-opt${LANG===l.code?' lang-active':''}" onclick="changeLang('${l.code}')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:20px;line-height:1">${l.flag}</span>
+              <span class="lang-opt-label" style="font-size:13px;font-weight:${LANG===l.code?'700':'500'};color:${LANG===l.code?'var(--blue)':'var(--txt)'}">${l.label}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;font-weight:700;color:${LANG===l.code?'var(--blue)':'var(--txt3)'};font-family:'DM Mono',monospace">${l.code.toUpperCase()}</span>
+              ${LANG===l.code ? '<i class="ti ti-check" style="font-size:16px;color:var(--blue)"></i>' : ''}
+            </div>
+          </div>`).join('');
+      }
       function viewFilter(f) { curFilter = f; goTab('list'); }
       function back() {
-        showNav(); closeNotifPanel(); showScreen('s-main');
-        (curTab === 'list' ? renderList() : renderHome()).then(initScrollHide);
+        showNav(); closeNotifPanel(); closeLangPanel(); showScreen('s-main');
+        if      (curTab === 'list')  renderList().then(initScrollHide);
+        else if (curTab === 'tasks') renderTasks().then(initScrollHide);
+        else                         renderHome().then(initScrollHide);
       }
 
       async function doLogin() {
@@ -1251,6 +1348,7 @@
       function toggleNotifPanel() {
         const panel = $('notif-panel');
         const isOpen = panel.classList.contains('show');
+        closeLangPanel();
         if (!isOpen) { renderNotifList(); panel.classList.add('show'); }
         else panel.classList.remove('show');
       }
@@ -1300,6 +1398,9 @@
         set('upload-before-txt', t('uploadPhoto')); set('upload-after-txt', t('uploadPhoto'));
         set('save-btn-txt', t('save'));
         // modals
+        set('qc-title', t('quickCloseTitle'));
+        set('qc-label', t('qcLabel'));
+        set('qc-confirm-txt', t('close'));
         set('modal-new-title', t('newUser'));
         set('modal-edit-title', t('editUser'));
         set('lbl-nu-pass', t('password')); set('lbl-nu-name', t('fullName'));
@@ -1333,29 +1434,35 @@
       function updateLangButtons() {
         const btns = document.querySelectorAll('.lang-btn');
         btns.forEach(b => b.classList.toggle('active', b.textContent === LANG.toUpperCase()));
+        const cur = $('lang-current'); if (cur) cur.textContent = LANG.toUpperCase();
       }
 
       function changeLang(l) {
         LANG = l;
         localStorage.setItem('lang', l);
+        closeLangPanel();
+        const cur = $('lang-current'); if (cur) cur.textContent = l.toUpperCase();
         renderStaticLabels();
         if (ME) updateTopbarRole();
         buildNav();
-        if (curTab === 'home') renderHome().then(initScrollHide);
-        else if (curTab === 'list') renderList().then(initScrollHide);
+        if      (curTab === 'home')   renderHome().then(initScrollHide);
+        else if (curTab === 'list')   renderList().then(initScrollHide);
+        else if (curTab === 'tasks')  renderTasks().then(initScrollHide);
         else if (curTab === 'profil') renderProfil().then(initScrollHide);
-        else if (curTab === 'users') renderUsers().then(initScrollHide);
+        else if (curTab === 'users')  renderUsers().then(initScrollHide);
       }
 
       function buildNav() {
         const isAdmin = ME.role === 'admin';
         const canAdd = ME.role === 'assembler' || isAdmin;
+        const hasTasks = ME.role === 'logistics' || ME.role === 'production';
         const nav = t('nav');
         const tabs = [
-          { id: 'home', icon: 'ti-layout-dashboard', label: nav.home },
-          { id: 'list', icon: 'ti-list', label: nav.list },
-          ...(canAdd ? [{ id: 'add', icon: 'ti-circle-plus', label: nav.add }] : []),
-          ...(isAdmin ? [{ id: 'users', icon: 'ti-users', label: nav.users }] : []),
+          { id: 'home',  icon: 'ti-layout-dashboard', label: nav.home },
+          { id: 'list',  icon: 'ti-list',              label: nav.list },
+          ...(canAdd    ? [{ id: 'add',   icon: 'ti-circle-plus',      label: nav.add }]        : []),
+          ...(hasTasks  ? [{ id: 'tasks', icon: 'ti-clipboard-check',  label: t('tasks') }]     : []),
+          ...(isAdmin   ? [{ id: 'users', icon: 'ti-users',            label: nav.users }]      : []),
           { id: 'profil', icon: 'ti-user', label: nav.profil },
         ];
         $('bottomnav').innerHTML = tabs.map(tab => `
@@ -1364,14 +1471,15 @@
     </div>`).join('');
       }
 
-      async function goTab(t) {
-        curTab = t; buildNav(); showNav(); closeNotifPanel();
-        if (t === 'add') { initAdd(); showScreen('s-add'); return }
+      async function goTab(tab) {
+        curTab = tab; buildNav(); showNav(); closeNotifPanel(); closeLangPanel();
+        if (tab === 'add') { initAdd(); showScreen('s-add'); return }
         showScreen('s-main');
-        if (t === 'home') renderHome().then(initScrollHide);
-        else if (t === 'list') renderList().then(initScrollHide);
-        else if (t === 'profil') renderProfil().then(initScrollHide);
-        else if (t === 'users') renderUsers().then(initScrollHide);
+        if      (tab === 'home')   renderHome().then(initScrollHide);
+        else if (tab === 'list')   renderList().then(initScrollHide);
+        else if (tab === 'tasks')  renderTasks().then(initScrollHide);
+        else if (tab === 'profil') renderProfil().then(initScrollHide);
+        else if (tab === 'users')  renderUsers().then(initScrollHide);
       }
 
       async function api(url, opts = {}) {
@@ -1523,6 +1631,7 @@
         const r = await api(`/api/records/${id}`); if (!r || r.error) return;
         const me = await api('/api/me'); if (!me) return;
         const rc = me.roleCfg;
+        const canCloseThis = rc.canClose && (me.role !== 'logistics' || r.dept === 'logistics');
         const db = $('d-badge');
         const st = t('status');
         db.textContent = st[r.status] || r.status;
@@ -1535,6 +1644,7 @@
       <div><div class="dl">${t('fieldStation')}</div><div class="dv">${r.station}</div></div>
       <div><div class="dl">${t('fieldType')}</div><div class="dv"><span class="type-pill ${TC[r.type] || 'r-ad'}">${r.type}</span></div></div>
       <div><div class="dl">${t('fieldAuditor')}</div><div class="dv">${r.auditor}</div></div>
+      <div style="grid-column:span 2"><div class="dl">${t('respDept')}</div><div class="dv" style="display:flex;align-items:center;gap:6px"><span class="role-pill ${r.dept==='logistics'?'r-l':'r-p'}" style="font-size:10px">${r.dept==='logistics'?t('deptLogistics'):t('deptProduction')}</span>${r.resolvedBy?`<span style="font-size:11px;color:var(--txt3)">${t('resolvedBy')}: <b>${r.resolvedBy}</b></span>`:''}</div></div>
     </div></div>
     <div class="det-block" style="${r.isOverdue?'border-left:3px solid var(--red)':r.isRisky?'border-left:3px solid var(--amber)':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
@@ -1562,7 +1672,7 @@
       <div id="upd-err" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:6px"></div>
       <div style="display:flex;gap:7px">
         ${r.status === 'open' ? `<button class="btn btn-warn" style="padding:10px" onclick="setStatus(${r.id},'inprogress')"><i class="ti ti-loader" style="font-size:15px"></i>${t('setInProgress')}</button>` : ''}
-        ${rc.canClose ? `<button class="btn btn-success" style="padding:10px" onclick="setStatus(${r.id},'closed')"><i class="ti ti-check" style="font-size:15px"></i>${t('close')}</button>` : ''}
+        ${canCloseThis ? `<button class="btn btn-success" style="padding:10px" onclick="setStatus(${r.id},'closed')"><i class="ti ti-check" style="font-size:15px"></i>${t('close')}</button>` : ''}
       </div>
     </div>
     ${(me.role==='admin'||me.role==='production') ? `<div class="det-block">
@@ -1571,7 +1681,7 @@
         <i class="ti ti-refresh" style="font-size:14px"></i>${r.isRecurring?t('unmarkRecurring'):t('markRecurring')}
       </button>
     </div>` : ''}`: ''}
-    ${r.status === 'closed' ? `<div style="background:var(--green-lt);border-radius:var(--r-sm);border:1px solid #A5D6A7;padding:13px;display:flex;align-items:center;gap:10px"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green)"></i><div><div style="font-size:13px;font-weight:600;color:var(--green)">${t('closedMsg')}</div><div style="font-size:11px;color:var(--green);opacity:.8;margin-top:1px">${t('closedSub')}</div></div></div>` : ''}
+    ${r.status === 'closed' ? `<div style="background:var(--green-lt);border-radius:var(--r-sm);border:1px solid #A5D6A7;padding:13px;display:flex;align-items:center;gap:10px"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green)"></i><div><div style="font-size:13px;font-weight:600;color:var(--green)">${t('closedMsg')}</div><div style="font-size:11px;color:var(--green);opacity:.8;margin-top:1px">${t('closedSub')}</div>${r.resolvedBy?`<div style="font-size:11px;color:var(--txt2);margin-top:4px">${t('resolvedBy')}: <b>${r.resolvedBy}</b></div>`:''}</div></div>` : ''}
     <div style="height:20px"></div>`;
         showScreen('s-detail');
       }
@@ -1662,6 +1772,86 @@
     <div style="height:20px"></div>`;
       }
 
+      // ── Tasks (Vazifalarim) ────────────────────────────────────
+      async function renderTasks() {
+        const recs = await api('/api/records'); if (!recs) return;
+        const open  = recs.filter(r => r.status === 'open');
+        const inprog = recs.filter(r => r.status === 'inprogress');
+
+        const secHtml = (title, icon, items, action) => {
+          if (!items.length) return '';
+          return `<div class="sec-lbl" style="margin-bottom:8px">
+            <i class="ti ${icon}" style="font-size:13px"></i>${title} (${items.length})
+          </div>
+          ${items.map(r => taskCard(r, action)).join('')}`;
+        };
+
+        $('main-content').innerHTML = `
+          ${secHtml(t('taskSectionNew'),        'ti-inbox',      open,   'accept')}
+          ${secHtml(t('taskSectionInProgress'), 'ti-loader',     inprog, 'close')}
+          ${!open.length && !inprog.length ? `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
+              <div style="width:64px;height:64px;background:var(--green-lt);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+                <i class="ti ti-circle-check" style="font-size:32px;color:var(--green)"></i>
+              </div>
+              <div style="font-size:15px;font-weight:700;color:var(--txt);margin-bottom:5px">${t('tasksDone')}</div>
+              <div style="font-size:12px;color:var(--txt3)">${t('tasksDoneHint')}</div>
+            </div>` : ''}
+        `;
+      }
+
+      function taskCard(r, action) {
+        const borderClass = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card' : ' open-card';
+        const dlBadge = r.deadline
+          ? `<span style="font-size:11px;color:${r.isOverdue?'var(--red)':r.isRisky?'var(--amber)':'var(--txt3)'};font-family:'DM Mono',monospace">📅 ${r.deadline}</span>`
+          : '';
+        const btn = action === 'accept'
+          ? `<button class="btn btn-warn btn-sm" style="margin-top:9px" onclick="event.stopPropagation();quickAccept(${r.id})">
+               <i class="ti ti-player-play" style="font-size:13px"></i>${t('quickAcceptBtn')}
+             </button>`
+          : `<button class="btn btn-success btn-sm" style="margin-top:9px" onclick="event.stopPropagation();openQuickClose(${r.id})">
+               <i class="ti ti-check" style="font-size:13px"></i>${t('close')}
+             </button>`;
+        return `<div class="card${borderClass}" onclick="showDetail(${r.id})">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div><span style="font-size:13px;font-weight:600">${r.line} · ${r.station}</span>
+              <span class="type-pill ${TC[r.type]||'r-ad'}" style="margin-left:6px">${r.type}</span>
+            </div>
+            ${dlBadge}
+          </div>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:4px">${r.problem.replace(/\n/g,' ').substring(0,70)}${r.problem.length>70?'...':''}</div>
+          <div style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${r.date} · ${r.addedBy}</div>
+          ${btn}
+        </div>`;
+      }
+
+      async function quickAccept(id) {
+        const r = await api(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'inprogress' }) });
+        if (r && !r.error) { toast(t('inProgressSet')); renderTasks().then(initScrollHide); loadNotifications(); }
+        else toast(r?.error || 'Xato', false);
+      }
+
+      let _qcId = null;
+      function openQuickClose(id) {
+        _qcId = id;
+        $('qc-action').value = '';
+        $('qc-err').textContent = '';
+        $('quick-close-modal').classList.add('show');
+      }
+      function closeQuickClose() { $('quick-close-modal').classList.remove('show'); }
+      async function confirmQuickClose() {
+        const action = $('qc-action').value.trim();
+        if (!action) { $('qc-err').textContent = t('actionRequired'); return; }
+        const r = await api(`/api/records/${_qcId}`, { method: 'PATCH', body: JSON.stringify({ status: 'closed', action }) });
+        if (r && !r.error) {
+          toast(t('closedSet'));
+          closeQuickClose();
+          if (curTab === 'tasks') renderTasks().then(initScrollHide);
+          else renderList().then(initScrollHide);
+          loadNotifications();
+        } else toast(r?.error || 'Xato', false);
+      }
+
       function openUserModal() { $('add-user-modal').classList.add('show') }
       function closeUserModal() { $('add-user-modal').classList.remove('show'); $('nu-err').textContent = '' }
 
@@ -1711,17 +1901,53 @@
         else toast(r?.error || 'Xato', false);
       }
 
-      function initAdd() {
+      async function initAdd() {
         const d = new Date();
         $('a-date').value = d.toISOString().split('T')[0];
-        $('a-time').value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        ['before', 'after'].forEach(k => {
-          $('box-' + k).innerHTML = `<i class="ti ti-cloud-upload"></i><span>${t('uploadPhoto')}</span>`;
-          $('f-' + k).value = '';
+        $('a-time').value = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        ['before','after'].forEach(k => {
+          $('box-'+k).innerHTML = `<i class="ti ti-cloud-upload"></i><span>${t('uploadPhoto')}</span>`;
+          $('f-'+k).value = '';
         });
         $('a-station').value = ''; $('a-prob').value = ''; $('a-action').value = '';
-        $('a-deadline').value = '';
-        $('a-err').textContent = '';
+        $('a-deadline').value = ''; $('a-err').textContent = '';
+
+        const isAssembler = ME.role === 'assembler';
+
+        // ── Rol bo'yicha hint ──────────────────────────────────
+        $('a-role-hint').innerHTML = `<div style="background:${isAssembler?'var(--blue-lt)':'var(--amber-lt)'};border-radius:var(--r-sm);padding:10px 13px;margin-bottom:12px;font-size:12px;color:${isAssembler?'var(--blue)':'var(--amber)'};display:flex;align-items:flex-start;gap:8px;line-height:1.5">
+          <i class="ti ${isAssembler?'ti-send':'ti-adjustments'}" style="font-size:16px;flex-shrink:0;margin-top:1px"></i>
+          <span>${isAssembler ? t('addHintAssembler') : t('addHintAdmin')}</span>
+        </div>`;
+
+        // ── Liniya: assembler uchun profildan oldin to'ldirish ──
+        if (isAssembler && ME.line) {
+          const opts = $('a-line').options;
+          for (let i = 0; i < opts.length; i++) {
+            if (opts[i].text === ME.line) { $('a-line').selectedIndex = i; break; }
+          }
+        }
+
+        // ── Auditor dropdown ────────────────────────────────────
+        if (isAssembler) {
+          $('a-auditor').innerHTML = `<option value="${ME.name}">${ME.name}</option>`;
+          $('a-auditor').disabled = true;
+          $('a-auditor').style.opacity = '0.6';
+        } else {
+          $('a-auditor').disabled = false;
+          $('a-auditor').style.opacity = '';
+          const names = await api('/api/assemblers');
+          $('a-auditor').innerHTML = (names || []).map(n => `<option>${n}</option>`).join('');
+        }
+
+        // ── Rol bo'yicha maydonlarni ko'rsatish/yashirish ──────
+        const show = (id, visible) => {
+          const el = $(id); if (el) el.style.display = visible ? '' : 'none';
+        };
+        show('a-action-wrap',  !isAssembler);   // Harakat rejasi — faqat admin
+        show('a-deadline-wrap', !isAssembler);   // Muddat — faqat admin
+        show('a-after-wrap',    !isAssembler);   // "Keyin" rasm — faqat admin
+
         renderStaticLabels();
       }
 
