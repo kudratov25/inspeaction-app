@@ -965,7 +965,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
           <div>
             <label
-              style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Before</label>
+              style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Oldin</label>
             <div class="upload-box" id="box-before" onclick="document.getElementById('f-before').click()">
               <i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span>
             </div>
@@ -973,7 +973,7 @@
           </div>
           <div>
             <label
-              style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">After</label>
+              style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Keyin</label>
             <div class="upload-box" id="box-after" onclick="document.getElementById('f-after').click()">
               <i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span>
             </div>
@@ -1133,7 +1133,7 @@
             <div class="notif-item" onclick="toggleNotifPanel();showDetail(${r.id})">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
                 <span style="font-size:13px;font-weight:600;color:var(--txt)">${r.line} · ${r.station}</span>
-                <span class="badge ${r.isOverdue ? 'b-overdue' : 'b-risky'}">${r.isOverdue ? '❗ Kechikdi' : r.daysLeft === 0 ? '⚠ Bugun!' : `⚠ ${r.daysLeft} kun`}</span>
+                <span class="badge ${r.isOverdue ? 'b-overdue' : 'b-risky'}">${r.isOverdue ? '❗ Kechikdi' : r.daysLeft === 0 ? '⚠ Bugun!' : `⚠ ${r.daysLeft} kun qoldi`}</span>
               </div>
               <div style="font-size:11px;color:var(--txt2);line-height:1.4">${r.problem.replace(/\n/g,' ').substring(0,55)}${r.problem.length>55?'...':''}</div>
               <div style="font-size:10px;color:var(--txt3);margin-top:2px;font-family:'DM Mono',monospace">Muddat: ${r.deadline}</div>
@@ -1191,11 +1191,11 @@
     <div class="hero">
       <div><div class="hero-num">${stats.total}</div><div class="hero-lbl">${roleMsg[ME.role] || ''}</div></div>
       <div class="hero-div"></div>
-      <div style="text-align:center"><div class="hero-num" style="color:#FFD54F">${stats.open}</div><div class="hero-lbl" style="color:#FFCC80">Open</div></div>
+      <div style="text-align:center"><div class="hero-num" style="color:#FFD54F">${stats.open}</div><div class="hero-lbl" style="color:#FFCC80">Ochiq</div></div>
       <div class="hero-div"></div>
       <div style="text-align:center"><div class="hero-num" style="color:#90CAF9">${stats.inprogress || 0}</div><div class="hero-lbl" style="color:#90CAF9">Jarayonda</div></div>
       <div class="hero-div"></div>
-      <div style="text-align:right"><div class="hero-num" style="color:#81C784">${stats.closed}</div><div class="hero-lbl" style="color:#A5D6A7">Closed</div></div>
+      <div style="text-align:right"><div class="hero-num" style="color:#81C784">${stats.closed}</div><div class="hero-lbl" style="color:#A5D6A7">Yopilgan</div></div>
     </div>
     ${stats.overdue > 0 ? `<div class="alert-box" style="background:var(--red-lt);border-color:#EF9A9A;cursor:pointer" onclick="viewFilter('overdue')">
       <i class="ti ti-alarm" style="font-size:20px;color:var(--red);flex-shrink:0"></i>
@@ -1214,7 +1214,7 @@
       </div>
       <div class="stat-box" style="cursor:pointer" onclick="viewFilter('risky')">
         <div class="stat-num" style="color:var(--amber)">${stats.risky || 0}</div>
-        <div class="stat-lbl">Risky (≤2 kun)</div>
+        <div class="stat-lbl">Xavfli (≤2 kun)</div>
       </div>
       <div class="stat-box">
         <div class="stat-num" style="color:var(--purple)">${stats.recurring || 0}</div>
@@ -1245,8 +1245,8 @@
         else if (curFilter === 'overdue')    filtered = recs.filter(x => x.isOverdue);
         else if (curFilter === 'recurring')  filtered = recs.filter(x => x.isRecurring);
         else if (['Trim','Chassis','Final'].includes(curFilter)) filtered = recs.filter(x => x.line === curFilter);
-        const filterLabels = { all:`Hammasi (${recs.length})`, open:'Open', inprogress:'Jarayonda', closed:'Closed',
-          risky:'⚠ Risky', overdue:'❗ Kechikkan', recurring:'Takroriy', Trim:'Trim', Chassis:'Chassis', Final:'Final' };
+        const filterLabels = { all:`Hammasi (${recs.length})`, open:'Ochiq', inprogress:'Jarayonda', closed:'Yopilgan',
+          risky:'⚠ Xavfli', overdue:'❗ Kechikkan', recurring:'Takroriy', Trim:'Trim', Chassis:'Chassis', Final:'Final' };
         $('main-content').innerHTML = `
     <div class="filter-row">
       ${['all','open','inprogress','closed','risky','overdue','Trim','Chassis','Final'].map(x =>
@@ -1261,9 +1261,9 @@
       function card(r) {
         const borderClass = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card' : r.status === 'open' ? ' open-card' : '';
         const statusBadge = r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed';
-        const statusLabel = r.status === 'open' ? 'Open' : r.status === 'inprogress' ? 'Jarayonda' : 'Closed';
+        const statusLabel = r.status === 'open' ? 'Ochiq' : r.status === 'inprogress' ? 'Jarayonda' : 'Yopilgan';
         const dlBadge = r.deadline && r.status !== 'closed'
-          ? `<span class="badge ${r.isOverdue?'b-overdue':r.isRisky?'b-risky':'b-inprogress'}" style="margin-left:4px">${r.isOverdue?'❗ Kechikdi':r.daysLeft===0?'⚠ Bugun':`⏰ ${r.daysLeft}k`}</span>`
+          ? `<span class="badge ${r.isOverdue?'b-overdue':r.isRisky?'b-risky':'b-inprogress'}" style="margin-left:4px">${r.isOverdue?'❗ Kechikdi':r.daysLeft===0?'⚠ Bugun':`⏰ ${r.daysLeft} kun`}</span>`
           : '';
         const recurringBadge = r.isRecurring ? `<span style="font-size:9px;font-weight:700;color:var(--purple);background:var(--purple-lt);border-radius:20px;padding:2px 7px;margin-left:4px">↺ Takror</span>` : '';
         return `<div class="card${borderClass}" onclick="showDetail(${r.id})">
@@ -1298,7 +1298,7 @@
         const me = await api('/api/me'); if (!me) return;
         const rc = me.roleCfg;
         const db = $('d-badge');
-        db.textContent = r.status === 'open' ? 'Open' : r.status === 'inprogress' ? 'Jarayonda' : 'Closed';
+        db.textContent = r.status === 'open' ? 'Ochiq' : r.status === 'inprogress' ? 'Jarayonda' : 'Yopilgan';
         db.className = 'badge ' + (r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed');
         $('detail-content').innerHTML = `
     <div class="det-block"><div class="det-grid">
@@ -1325,8 +1325,8 @@
     <div class="det-block"><div class="dl" style="margin-bottom:5px">Harakat rejasi</div><div class="dv" style="line-height:1.6">${r.action}</div></div>
     ${r.imgBefore || r.imgAfter ? `<div class="det-block"><div class="dl" style="margin-bottom:8px">Rasmlar</div>
       <div style="display:flex;gap:12px">
-        ${r.imgBefore ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">BEFORE</div><img src="${r.imgBefore}" onclick="openLB('${r.imgBefore}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
-        ${r.imgAfter ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">AFTER</div><img src="${r.imgAfter}" onclick="openLB('${r.imgAfter}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
+        ${r.imgBefore ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">OLDIN</div><img src="${r.imgBefore}" onclick="openLB('${r.imgBefore}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
+        ${r.imgAfter ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">KEYIN</div><img src="${r.imgAfter}" onclick="openLB('${r.imgAfter}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
       </div></div>`: ''}
     ${rc.canAction && r.status !== 'closed' ? `
     <div class="det-block">
