@@ -234,6 +234,28 @@ app.post('/api/users', auth, async (req, res) => {
   }
 });
 
+app.patch('/api/users/:id', auth, async (req, res) => {
+  if (req.session.user.role !== 'admin') return res.status(403).json({ error: 'Faqat admin' });
+  try {
+    const { full_name, role, line, password } = req.body;
+    if (!full_name || !role) return res.status(400).json({ error: 'Ism va rol kiritilishi shart' });
+    if (!ROLES[role]) return res.status(400).json({ error: 'Noto\'g\'ri rol' });
+    const sets = ['full_name=$1','role=$2','line=$3'];
+    const vals = [full_name, role, line || ''];
+    if (password && password.trim()) {
+      vals.push(await bcrypt.hash(password.trim(), 10));
+      sets.push(`password_hash=$${vals.length}`);
+    }
+    vals.push(req.params.id);
+    const { rows } = await pool.query(
+      `UPDATE users SET ${sets.join(',')} WHERE id=$${vals.length} RETURNING id,username,full_name,role,line`,
+      vals
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Topilmadi' });
+    res.json(rows[0]);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server xatosi' }); }
+});
+
 app.delete('/api/users/:id', auth, async (req, res) => {
   if (req.session.user.role !== 'admin') return res.status(403).json({ error: 'Faqat admin' });
   if (+req.params.id === req.session.user.id) return res.status(400).json({ error: 'O\'zingizni o\'chira olmaysiz' });
