@@ -851,22 +851,25 @@
         <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px">Tekshiruv Nazorat</div>
         <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Inspection Control System</div>
       </div>
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:4px">
+        <button class="lang-btn" onclick="changeLang('uz')" id="ll-uz">UZ</button>
+        <button class="lang-btn" onclick="changeLang('ru')" id="ll-ru">RU</button>
+        <button class="lang-btn" onclick="changeLang('en')" id="ll-en">EN</button>
+      </div>
       <div class="login-card">
         <div style="margin-bottom:12px">
-          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.4px">
-            USERNAME</div>
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.4px" id="lbl-username">USERNAME</div>
           <input class="login-inp" id="l-user" placeholder="foydalanuvchi nomi">
         </div>
         <div style="margin-bottom:14px">
-          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.4px">
-            PAROL</div>
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.4px" id="lbl-password">PAROL</div>
           <input class="login-inp" type="password" id="l-pass" placeholder="••••••">
         </div>
         <div id="l-err" style="font-size:12px;color:#FFCDD2;text-align:center;min-height:16px;margin-bottom:8px"></div>
         <button id="login-btn" onclick="doLogin()" style="width:100%;padding:13px;border:none;border-radius:var(--r-sm);
       background:#fff;color:var(--blue-dark);font-size:14px;font-weight:700;
       font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-          <span>Kirish</span>
+          <span id="login-btn-txt">Kirish</span>
           <div class="spinner" id="login-spin"
             style="border-top-color:var(--blue-dark);border-color:rgba(21,101,192,.2)"></div>
         </button>
@@ -919,8 +922,8 @@
       <div class="topbar">
         <button class="tb-btn" onclick="back()" style="margin-right:4px"><i class="ti ti-arrow-left"
             style="font-size:18px"></i></button>
-        <h1>Batafsil</h1>
-        <span id="d-badge" class="badge b-open">Open</span>
+        <h1 id="detail-title">Batafsil</h1>
+        <span id="d-badge" class="badge b-open"></span>
       </div>
       <div class="content" id="detail-content"></div>
     </div>
@@ -929,23 +932,23 @@
       <div class="topbar">
         <button class="tb-btn" onclick="goTab('home')" style="margin-right:4px"><i class="ti ti-arrow-left"
             style="font-size:18px"></i></button>
-        <h1>Yangi muammo</h1>
+        <h1 id="add-title">Yangi muammo</h1>
       </div>
       <div class="content">
-        <div class="sec-lbl"><i class="ti ti-info-circle" style="font-size:13px"></i>Asosiy ma'lumot</div>
+        <div class="sec-lbl" id="add-sec-basic"><i class="ti ti-info-circle" style="font-size:13px"></i>Asosiy ma'lumot</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label>Sana</label><input class="inp" type="date" id="a-date"></div>
-          <div class="field" style="margin:0"><label>Vaqt</label><input class="inp" type="time" id="a-time"></div>
+          <div class="field" style="margin:0"><label id="lbl-date">Sana</label><input class="inp" type="date" id="a-date"></div>
+          <div class="field" style="margin:0"><label id="lbl-time">Vaqt</label><input class="inp" type="time" id="a-time"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label>Liniya</label>
+          <div class="field" style="margin:0"><label id="lbl-line">Liniya</label>
             <select class="inp" id="a-line">
               <option>Trim</option>
               <option>Chassis</option>
               <option>Final</option>
             </select>
           </div>
-          <div class="field" style="margin:0"><label>Muammo turi</label>
+          <div class="field" style="margin:0"><label id="lbl-type">Muammo turi</label>
             <select class="inp" id="a-type">
               <option>Machine</option>
               <option>Material</option>
@@ -955,9 +958,8 @@
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label>Stansiya</label><input class="inp" id="a-station"
-              placeholder="T-01-01"></div>
-          <div class="field" style="margin:0"><label>Auditor</label>
+          <div class="field" style="margin:0"><label id="lbl-station">Stansiya</label><input class="inp" id="a-station" placeholder="T-01-01"></div>
+          <div class="field" style="margin:0"><label id="lbl-auditor">Auditor</label>
             <select class="inp" id="a-auditor">
               <option>Shavkat</option>
               <option>Husan</option>
@@ -967,38 +969,33 @@
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label>Muddat (deadline)</label><input class="inp" type="date" id="a-deadline"></div>
+          <div class="field" style="margin:0"><label id="lbl-deadline">Muddat</label><input class="inp" type="date" id="a-deadline"></div>
           <div class="field" style="margin:0"><label>&nbsp;</label>
-            <div style="font-size:11px;color:var(--txt3);padding-top:8px;line-height:1.4">Muammo yopilishi kerak bo'lgan sana</div>
+            <div style="font-size:11px;color:var(--txt3);padding-top:8px;line-height:1.4" id="lbl-deadline-hint">Muammo yopilishi kerak bo'lgan sana</div>
           </div>
         </div>
-        <div class="field"><label>Muammo tavsifi</label><textarea class="inp" id="a-prob"
-            placeholder="Muammoni batafsil yozing..."></textarea></div>
-        <div class="field"><label>Harakat rejasi</label><textarea class="inp" id="a-action"
-            placeholder="Harakat rejasini yozing..."></textarea></div>
-        <div class="sec-lbl"><i class="ti ti-photo" style="font-size:13px"></i>Rasmlar</div>
+        <div class="field"><label id="lbl-problem">Muammo tavsifi</label><textarea class="inp" id="a-prob" placeholder="Muammoni batafsil yozing..."></textarea></div>
+        <div class="field"><label id="lbl-action">Harakat rejasi</label><textarea class="inp" id="a-action" placeholder="Harakat rejasini yozing..."></textarea></div>
+        <div class="sec-lbl" id="add-sec-photos"><i class="ti ti-photo" style="font-size:13px"></i>Rasmlar</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
           <div>
-            <label
-              style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Oldin</label>
+            <label id="lbl-before" style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Oldin</label>
             <div class="upload-box" id="box-before" onclick="document.getElementById('f-before').click()">
-              <i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span>
+              <i class="ti ti-cloud-upload"></i><span id="upload-before-txt">Rasm yuklash</span>
             </div>
             <input type="file" id="f-before" accept="image/*" style="display:none" onchange="prevImg('before',this)">
           </div>
           <div>
-            <label
-              style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Keyin</label>
+            <label id="lbl-after" style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Keyin</label>
             <div class="upload-box" id="box-after" onclick="document.getElementById('f-after').click()">
-              <i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span>
+              <i class="ti ti-cloud-upload"></i><span id="upload-after-txt">Rasm yuklash</span>
             </div>
             <input type="file" id="f-after" accept="image/*" style="display:none" onchange="prevImg('after',this)">
           </div>
         </div>
-        <div id="a-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-bottom:8px">
-        </div>
+        <div id="a-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-bottom:8px"></div>
         <button class="btn btn-primary" id="save-btn" onclick="addRecord()">
-          <i class="ti ti-device-floppy" style="font-size:17px"></i>Saqlash
+          <i class="ti ti-device-floppy" style="font-size:17px"></i><span id="save-btn-txt">Saqlash</span>
           <div class="spinner" id="save-spin"></div>
         </button>
         <div style="height:24px"></div>
@@ -1011,56 +1008,52 @@
     <div id="add-user-modal" class="modal-overlay" onclick="if(event.target===this)closeUserModal()">
       <div class="modal-sheet">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <span style="font-size:15px;font-weight:600;color:var(--txt)">Yangi foydalanuvchi</span>
-          <button onclick="closeUserModal()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i
-              class="ti ti-x" style="font-size:20px"></i></button>
+          <span style="font-size:15px;font-weight:600;color:var(--txt)" id="modal-new-title">Yangi foydalanuvchi</span>
+          <button onclick="closeUserModal()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
         </div>
         <div class="field"><label>Username</label><input class="inp" id="nu-user" placeholder="username"></div>
-        <div class="field"><label>Parol</label><input class="inp" type="password" id="nu-pass" placeholder="••••••">
-        </div>
-        <div class="field"><label>To'liq ism</label><input class="inp" id="nu-name" placeholder="Ism Familiya"></div>
+        <div class="field"><label id="lbl-nu-pass">Parol</label><input class="inp" type="password" id="nu-pass" placeholder="••••••"></div>
+        <div class="field"><label id="lbl-nu-name">To'liq ism</label><input class="inp" id="nu-name" placeholder="Ism Familiya"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label>Rol</label>
+          <div class="field" style="margin:0"><label id="lbl-nu-role">Rol</label>
             <select class="inp" id="nu-role">
-              <option value="assembler">Yig'uvchi</option>
-              <option value="logistics">Logistika</option>
-              <option value="production">Production</option>
-              <option value="admin">Admin</option>
+              <option value="assembler" id="nu-r-a">Yig'uvchi</option>
+              <option value="logistics" id="nu-r-l">Logistika</option>
+              <option value="production" id="nu-r-p">Production</option>
+              <option value="admin" id="nu-r-ad">Admin</option>
             </select>
           </div>
-          <div class="field" style="margin:0"><label>Liniya</label><input class="inp" id="nu-line" placeholder="Trim">
-          </div>
+          <div class="field" style="margin:0"><label id="lbl-nu-line">Liniya</label><input class="inp" id="nu-line" placeholder="Trim"></div>
         </div>
         <div id="nu-err" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px"></div>
-        <button class="btn btn-primary" onclick="saveUser()"><i class="ti ti-user-plus"
-            style="font-size:17px"></i>Saqlash</button>
+        <button class="btn btn-primary" onclick="saveUser()"><i class="ti ti-user-plus" style="font-size:17px"></i><span id="lbl-nu-save">Saqlash</span></button>
         <div style="height:8px"></div>
       </div>
     </div>
     <div id="edit-user-modal" class="modal-overlay" onclick="if(event.target===this)closeEditModal()">
       <div class="modal-sheet">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <span style="font-size:15px;font-weight:600;color:var(--txt)">Foydalanuvchini tahrirlash</span>
+          <span style="font-size:15px;font-weight:600;color:var(--txt)" id="modal-edit-title">Foydalanuvchini tahrirlash</span>
           <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
         </div>
         <div class="field"><label>Username</label><input class="inp" id="eu-user" disabled style="opacity:.5;cursor:not-allowed"></div>
-        <div class="field"><label>To'liq ism</label><input class="inp" id="eu-name" placeholder="Ism Familiya"></div>
+        <div class="field"><label id="lbl-eu-name">To'liq ism</label><input class="inp" id="eu-name" placeholder="Ism Familiya"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label>Rol</label>
+          <div class="field" style="margin:0"><label id="lbl-eu-role">Rol</label>
             <select class="inp" id="eu-role">
-              <option value="assembler">Yig'uvchi</option>
-              <option value="logistics">Logistika</option>
-              <option value="production">Production</option>
-              <option value="admin">Admin</option>
+              <option value="assembler" id="eu-r-a">Yig'uvchi</option>
+              <option value="logistics" id="eu-r-l">Logistika</option>
+              <option value="production" id="eu-r-p">Production</option>
+              <option value="admin" id="eu-r-ad">Admin</option>
             </select>
           </div>
-          <div class="field" style="margin:0"><label>Liniya</label><input class="inp" id="eu-line" placeholder="Trim"></div>
+          <div class="field" style="margin:0"><label id="lbl-eu-line">Liniya</label><input class="inp" id="eu-line" placeholder="Trim"></div>
         </div>
-        <div class="field"><label>Yangi parol <span style="font-size:10px;font-weight:400;color:var(--txt3)">(o'zgartirmasangiz bo'sh qoldiring)</span></label>
+        <div class="field"><label id="lbl-eu-pass">Yangi parol <span style="font-size:10px;font-weight:400;color:var(--txt3)" id="lbl-eu-pass-hint">(o'zgartirmasangiz bo'sh qoldiring)</span></label>
           <input class="inp" type="password" id="eu-pass" placeholder="••••••">
         </div>
         <div id="eu-err" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px"></div>
-        <button class="btn btn-primary" onclick="updateUser()"><i class="ti ti-device-floppy" style="font-size:17px"></i>Saqlash</button>
+        <button class="btn btn-primary" onclick="updateUser()"><i class="ti ti-device-floppy" style="font-size:17px"></i><span id="lbl-eu-save">Saqlash</span></button>
         <div style="height:8px"></div>
       </div>
     </div>
@@ -1112,7 +1105,7 @@
           allFields:'Barcha maydonlarni kiriting', usernameExists:'Bu username allaqachon mavjud',
           cantDeleteSelf:"O'zingizni o'chira olmaysiz",
           exportExcel:'Excel', exportWord:'Word', exportTitle:'Yuklab olish',
-          noRecords:'Muammo topilmadi',
+          noRecords:'Muammo topilmadi', searchPlaceholder:"Qidirish...",
         },
         ru: {
           roleLabel: { assembler:'Сборщик', logistics:'Логистика', production:'Производство', admin:'Админ' },
@@ -1153,7 +1146,7 @@
           allFields:'Заполните все поля', usernameExists:'Такой логин уже существует',
           cantDeleteSelf:'Нельзя удалить себя',
           exportExcel:'Excel', exportWord:'Word', exportTitle:'Скачать',
-          noRecords:'Проблем не найдено',
+          noRecords:'Проблем не найдено', searchPlaceholder:'Поиск...',
         },
         en: {
           roleLabel: { assembler:'Assembler', logistics:'Logistics', production:'Production', admin:'Admin' },
@@ -1194,7 +1187,7 @@
           allFields:'Fill in all fields', usernameExists:'Username already exists',
           cantDeleteSelf:"Can't delete yourself",
           exportExcel:'Excel', exportWord:'Word', exportTitle:'Download',
-          noRecords:'No issues found',
+          noRecords:'No issues found', searchPlaceholder:'Search...',
         },
       };
       let LANG = localStorage.getItem('lang') || 'uz';
@@ -1283,6 +1276,50 @@
           `).join('')}`;
       }
 
+      function renderStaticLabels() {
+        const rl = t('roleLabel');
+        const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+        const setph = (id, val) => { const el = $(id); if (el) el.placeholder = val; };
+        // login
+        set('lbl-username', t('username').toUpperCase());
+        set('lbl-password', t('password').toUpperCase());
+        set('login-btn-txt', t('login'));
+        setph('l-user', t('username').toLowerCase());
+        // detail
+        set('detail-title', t('detail'));
+        // add form
+        set('add-title', t('addNew'));
+        set('add-sec-basic', ' '+t('basicInfo'));
+        set('lbl-date', t('fieldDate')); set('lbl-time', t('fieldTime'));
+        set('lbl-line', t('fieldLine')); set('lbl-type', t('fieldType'));
+        set('lbl-station', t('fieldStation')); set('lbl-auditor', t('fieldAuditor'));
+        set('lbl-deadline', t('deadline')); set('lbl-deadline-hint', t('deadlineHint'));
+        set('lbl-problem', t('fieldProblem')); set('lbl-action', t('fieldAction'));
+        set('add-sec-photos', ' '+t('photos'));
+        set('lbl-before', t('before').toUpperCase()); set('lbl-after', t('after').toUpperCase());
+        set('upload-before-txt', t('uploadPhoto')); set('upload-after-txt', t('uploadPhoto'));
+        set('save-btn-txt', t('save'));
+        // modals
+        set('modal-new-title', t('newUser'));
+        set('modal-edit-title', t('editUser'));
+        set('lbl-nu-pass', t('password')); set('lbl-nu-name', t('fullName'));
+        set('lbl-nu-role', t('role')); set('lbl-nu-line', t('line')); set('lbl-nu-save', t('save'));
+        set('lbl-eu-name', t('fullName')); set('lbl-eu-role', t('role'));
+        set('lbl-eu-line', t('line')); set('lbl-eu-pass', t('newPassword'));
+        set('lbl-eu-pass-hint', t('passwordHint')); set('lbl-eu-save', t('save'));
+        // role options in selects
+        [['nu','eu']].flat().forEach(p => {
+          set(`${p}-r-a`, rl.assembler); set(`${p}-r-l`, rl.logistics);
+          set(`${p}-r-p`, rl.production); set(`${p}-r-ad`, rl.admin);
+        });
+        // lang buttons active state
+        updateLangButtons();
+        // login page lang buttons
+        ['uz','ru','en'].forEach(l => {
+          const b = $('ll-'+l); if (b) b.classList.toggle('active', l===LANG);
+        });
+      }
+
       function updateTopbarRole() {
         const el = $('m-role');
         if (!el || !ME) return;
@@ -1301,7 +1338,7 @@
       function changeLang(l) {
         LANG = l;
         localStorage.setItem('lang', l);
-        updateLangButtons();
+        renderStaticLabels();
         if (ME) updateTopbarRole();
         buildNav();
         if (curTab === 'home') renderHome().then(initScrollHide);
@@ -1404,9 +1441,11 @@
     <div style="text-align:center;padding:6px 0 2px"><span style="font-size:13px;color:var(--blue);font-weight:600;cursor:pointer" onclick="goTab('list')">${t('viewAll')}</span></div>`;
       }
 
+      let curSearch = '';
       async function renderList(f) {
-        if (f) curFilter = f;
-        const recs = await api('/api/records'); if (!recs) return;
+        if (f !== undefined) curFilter = f;
+        const url = curSearch ? `/api/records?search=${encodeURIComponent(curSearch)}` : '/api/records';
+        const recs = await api(url); if (!recs) return;
         let filtered = recs;
         if (curFilter === 'open')       filtered = recs.filter(x => x.status === 'open');
         else if (curFilter === 'inprogress') filtered = recs.filter(x => x.status === 'inprogress');
@@ -1424,6 +1463,12 @@
         `<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${filterLabels[x]||x}</div>`
       ).join('')}
     </div>
+    <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center">
+      <div style="flex:1;position:relative">
+        <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txt3)"></i>
+        <input type="search" class="inp" id="list-search" value="${curSearch.replace(/"/g,'&quot;')}" placeholder="${t('searchPlaceholder')||'Qidirish...'}" style="padding-left:32px;margin:0" oninput="curSearch=this.value;renderList()">
+      </div>
+    </div>
     <div class="export-row">
       <div class="export-btn excel" onclick="doExport('excel')"><i class="ti ti-file-spreadsheet" style="font-size:15px"></i>${t('exportExcel')}</div>
       <div class="export-btn word" onclick="doExport('word')"><i class="ti ti-file-word" style="font-size:15px"></i>${t('exportWord')}</div>
@@ -1434,7 +1479,7 @@
       }
 
       function doExport(format) {
-        const url = `/api/export?format=${format}&lang=${LANG}`;
+        const url = `/api/export?format=${format}&lang=${LANG}&filter=${encodeURIComponent(curFilter)}`;
         const a = document.createElement('a');
         a.href = url; a.download = ''; a.click();
       }
@@ -1671,12 +1716,13 @@
         $('a-date').value = d.toISOString().split('T')[0];
         $('a-time').value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         ['before', 'after'].forEach(k => {
-          $('box-' + k).innerHTML = `<i class="ti ti-cloud-upload"></i><span>Rasm yuklash</span>`;
+          $('box-' + k).innerHTML = `<i class="ti ti-cloud-upload"></i><span>${t('uploadPhoto')}</span>`;
           $('f-' + k).value = '';
         });
         $('a-station').value = ''; $('a-prob').value = ''; $('a-action').value = '';
         $('a-deadline').value = '';
         $('a-err').textContent = '';
+        renderStaticLabels();
       }
 
       function prevImg(k, input) {
@@ -1711,6 +1757,8 @@
 
       function openLB(src) { $('lb-img').src = src; $('lightbox').classList.add('show') }
       function closeLB() { $('lightbox').classList.remove('show') }
+
+      renderStaticLabels();
 
       fetch('/api/config').then(r => r.json()).then(c => {
         if (c.demo) $('demo-section').style.display = 'block';

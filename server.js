@@ -120,7 +120,14 @@ app.get('/api/config', (req, res) => {
 app.get('/api/records', auth, async (req, res) => {
   try {
     const { clause, params } = visibleWhere(req.session.user);
-    const { rows } = await pool.query(`SELECT * FROM records ${clause} ORDER BY created_at ASC`, params);
+    let query = `SELECT * FROM records ${clause}`;
+    const qParams = [...params];
+    if (req.query.search) {
+      qParams.push(`%${req.query.search}%`);
+      query += ` AND (problem ILIKE $${qParams.length} OR station ILIKE $${qParams.length} OR auditor ILIKE $${qParams.length})`;
+    }
+    query += ' ORDER BY created_at ASC';
+    const { rows } = await pool.query(query, qParams);
     res.json(rows.map(dbToClient));
   } catch (e) { console.error(e); res.status(500).json({ error: 'Server xatosi' }); }
 });
@@ -329,63 +336,154 @@ const EXPORT_I18N = {
 // ─── Export ─────────────────────────────────────────────────────
 app.get('/api/export', auth, async (req, res) => {
   try {
-    const lang   = ['uz','ru','en'].includes(req.query.lang) ? req.query.lang : 'uz';
-    const format = req.query.format === 'word' ? 'word' : 'excel';
-    const tr     = EXPORT_I18N[lang];
+    const lang     = ['uz','ru','en'].includes(req.query.lang) ? req.query.lang : 'uz';
+    const format   = req.query.format === 'word' ? 'word' : 'excel';
+    const filter   = req.query.filter || 'all';
+    const tr       = EXPORT_I18N[lang];
     const { clause, params } = visibleWhere(req.session.user);
-    const { rows } = await pool.query(`SELECT * FROM records ${clause} ORDER BY created_at ASC`, params);
+    let query = `SELECT * FROM records ${clause}`;
+    const qParams = [...params];
+    const today = new Date().toISOString().split('T')[0];
+    const twoDays = new Date(Date.now() + 2*86400000).toISOString().split('T')[0];
+    if (filter === 'open')       { query += ` AND status='open'`; }
+    else if (filter === 'inprogress') { query += ` AND status='inprogress'`; }
+    else if (filter === 'closed')     { query += ` AND status='closed'`; }
+    else if (filter === 'risky')      { query += ` AND status!='closed' AND deadline IS NOT NULL AND deadline > '${today}' AND deadline <= '${twoDays}'`; }
+    else if (filter === 'overdue')    { query += ` AND status!='closed' AND deadline IS NOT NULL AND deadline < '${today}'`; }
+    else if (filter === 'recurring')  { query += ` AND is_recurring=true`; }
+    else if (['Trim','Chassis','Final'].includes(filter)) { qParams.push(filter); query += ` AND line=$${qParams.length}`; }
+    query += ' ORDER BY created_at ASC';
+    const { rows } = await pool.query(query, qParams);
     const now = new Date().toLocaleDateString('uz-UZ');
 
     if (format === 'excel') {
-      const data = [tr.headers, ...rows.map((r, i) => [
-        i + 1, r.date, r.time, r.line, r.type, r.station, r.auditor,
-        r.problem, r.action, tr.status[r.status] || r.status,
-        r.deadline || '—', r.added_by,
-      ])];
+      const statusColors = { open: 'FFD54F', inprogress: '90CAF9', closed: 'A5D6A7' };
+      const data = [
+        tr.headers,
+        ...rows.map((r, i) => [
+          i+1, r.date, r.time, r.line, r.type, r.station, r.auditor,
+          r.problem, r.action, tr.status[r.status]||r.status,
+          r.deadline||'—', r.added_by,
+        ])
+      ];
       const ws = XLSX.utils.aoa_to_sheet(data);
-      ws['!cols'] = [4,8,6,8,10,10,10,30,30,12,10,10].map(w => ({ wch: w }));
-      // bold header row
+      ws['!cols'] = [4,9,6,8,10,10,12,38,38,12,10,12].map(w => ({ wch: w }));
+      // header row: bold + blue bg + white font
       tr.headers.forEach((_, ci) => {
         const cell = XLSX.utils.encode_cell({ r: 0, c: ci });
-        if (ws[cell]) ws[cell].s = { font: { bold: true } };
+        if (!ws[cell]) return;
+        ws[cell].s = {
+          font:      { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+          fill:      { patternType: 'solid', fgColor: { rgb: '1565C0' } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border:    { top:{style:'thin',color:{rgb:'CCCCCC'}}, bottom:{style:'thin',color:{rgb:'CCCCCC'}}, left:{style:'thin',color:{rgb:'CCCCCC'}}, right:{style:'thin',color:{rgb:'CCCCCC'}} },
+        };
       });
+      // data rows: alternating bg + status color on col 9 + borders
+      rows.forEach((r, ri) => {
+        const rowIdx = ri + 1;
+        const bg = ri % 2 === 0 ? 'FFFFFF' : 'F5F8FF';
+        for (let ci = 0; ci < tr.headers.length; ci++) {
+          const cell = XLSX.utils.encode_cell({ r: rowIdx, c: ci });
+          if (!ws[cell]) ws[cell] = { t: 's', v: '' };
+          const isStatus = ci === 9;
+          ws[cell].s = {
+            fill:      { patternType: 'solid', fgColor: { rgb: isStatus ? (statusColors[r.status]||bg) : bg } },
+            font:      { sz: 10, color: { rgb: '1A2535' } },
+            alignment: { vertical: 'top', wrapText: true, horizontal: ci <= 1 || ci === 9 ? 'center' : 'left' },
+            border:    { top:{style:'thin',color:{rgb:'E0E7EF'}}, bottom:{style:'thin',color:{rgb:'E0E7EF'}}, left:{style:'thin',color:{rgb:'E0E7EF'}}, right:{style:'thin',color:{rgb:'E0E7EF'}} },
+          };
+        }
+      });
+      // summary row
+      const sumRow = rows.length + 1;
+      ws[XLSX.utils.encode_cell({r:sumRow,c:0})] = { t:'s', v:`${tr.total}: ${rows.length}`, s:{ font:{bold:true,sz:11}, fill:{patternType:'solid',fgColor:{rgb:'E3F2FD'}} } };
+      ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:sumRow,c:tr.headers.length-1}});
+      ws['!rows'] = [{ hpt: 22 }, ...rows.map(() => ({ hpt: 40 }))];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, tr.title.substring(0, 31));
-      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', cellStyles: true });
       res.setHeader('Content-Disposition', `attachment; filename="tekshiruv-${lang}-${Date.now()}.xlsx"`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       return res.send(buf);
     }
 
-    // Word
-    const headerCells = tr.headers.map(h => new TableCell({
-      children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 18 })], alignment: AlignmentType.CENTER })],
-      shading: { fill: '1565C0' },
-      width: { size: Math.floor(9000 / tr.headers.length), type: WidthType.DXA },
+    // ── Word ────────────────────────────────────────────────────
+    const cellBorder = { top:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC'}, bottom:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC'}, left:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC'}, right:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC'} };
+    const colWidths  = [600,900,600,800,900,900,1100,2800,2800,1000,900,1100];
+    const headerCells = tr.headers.map((h, i) => new TableCell({
+      children: [new Paragraph({ children:[new TextRun({text:h,bold:true,size:18,color:'FFFFFF'})], alignment:AlignmentType.CENTER })],
+      shading: { fill:'1565C0', color:'auto' },
+      width:   { size: colWidths[i]||800, type: WidthType.DXA },
+      borders: cellBorder,
     }));
-    const dataRows = rows.map((r, i) => new TableRow({
-      children: [
-        i+1, r.date, r.time, r.line, r.type, r.station, r.auditor,
+
+    const docChildren = [
+      new Paragraph({ children:[new TextRun({text:tr.title, bold:true, size:28, color:'1565C0'})], alignment:AlignmentType.CENTER, spacing:{after:100} }),
+      new Paragraph({ children:[new TextRun({text:`${tr.generated}: ${now}   |   ${tr.total}: ${rows.length}`, italics:true, size:18, color:'5A6A7E'})], spacing:{after:200} }),
+    ];
+
+    for (const [ri, r] of rows.entries()) {
+      const bg = ri % 2 === 0 ? 'FFFFFF' : 'F5F8FF';
+      const textVals = [
+        ri+1, r.date, r.time, r.line, r.type, r.station, r.auditor,
         r.problem, r.action, tr.status[r.status]||r.status,
         r.deadline||'—', r.added_by,
-      ].map(val => new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: String(val ?? '—'), size: 16 })] })],
-        width: { size: Math.floor(9000 / tr.headers.length), type: WidthType.DXA },
-      })),
-    }));
+      ];
+      const cells = textVals.map((val, ci) => new TableCell({
+        children: [new Paragraph({ children:[new TextRun({text:String(val??'—'),size:16})], spacing:{before:40,after:40} })],
+        shading: { fill: ci===9 ? ({open:'FFF9C4',inprogress:'E3F2FD',closed:'E8F5E9'}[r.status]||bg) : bg, color:'auto' },
+        width: { size: colWidths[ci]||800, type: WidthType.DXA },
+        borders: cellBorder,
+      }));
+
+      // add image cells if this record has photos
+      const hasImg = r.img_before || r.img_after;
+      if (hasImg) {
+        const imgCells = [];
+        for (const [label, imgPath] of [[tr.before||'Before', r.img_before],[tr.after||'After', r.img_after]]) {
+          if (!imgPath) continue;
+          const fullPath = path.join(__dirname, imgPath);
+          let imgRun;
+          try {
+            const imgBuf = fs.readFileSync(fullPath);
+            const { ImageRun } = require('docx');
+            imgRun = new ImageRun({ data: imgBuf, transformation:{ width:120, height:90 } });
+          } catch { imgRun = new TextRun({ text: label+': '+imgPath, size:14, italics:true }); }
+          imgCells.push(new TableCell({
+            children: [
+              new Paragraph({ children:[new TextRun({text:label,bold:true,size:14})], spacing:{after:40} }),
+              new Paragraph({ children:[imgRun] }),
+            ],
+            borders: cellBorder,
+          }));
+        }
+        if (imgCells.length) {
+          docChildren.push(new Table({ rows:[new TableRow({children:cells})], width:{size:100,type:WidthType.PERCENTAGE} }));
+          docChildren.push(new Table({ rows:[new TableRow({children:imgCells})], width:{size:100,type:WidthType.PERCENTAGE} }));
+          docChildren.push(new Paragraph({text:'', spacing:{after:120}}));
+          continue;
+        }
+      }
+      docChildren.push(new Table({ rows:[new TableRow({children:[...cells]})], width:{size:100,type:WidthType.PERCENTAGE} }));
+    }
+
     const doc = new Document({
-      sections: [{ properties: { page: { size: { orientation: 'landscape' } } }, children: [
-        new Paragraph({ text: tr.title, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [new TextRun({ text: `${tr.generated}: ${now}  |  ${tr.total}: ${rows.length}`, italics: true, size: 18 })] }),
-        new Paragraph({ text: '' }),
-        new Table({ rows: [new TableRow({ children: headerCells, tableHeader: true }), ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } }),
+      sections: [{ properties:{ page:{ size:{ orientation:'landscape', width:16838, height:11906 } } }, children: [
+        new Table({ rows:[new TableRow({children:headerCells,tableHeader:true}),...rows.map((_,ri)=>{
+          const r=rows[ri];
+          const bg=ri%2===0?'FFFFFF':'F5F8FF';
+          return new TableRow({children:[ri+1,r.date,r.time,r.line,r.type,r.station,r.auditor,r.problem,r.action,tr.status[r.status]||r.status,r.deadline||'—',r.added_by].map((val,ci)=>new TableCell({children:[new Paragraph({children:[new TextRun({text:String(val??'—'),size:16})],spacing:{before:40,after:40}})],shading:{fill:ci===9?({open:'FFF9C4',inprogress:'E3F2FD',closed:'E8F5E9'}[r.status]||bg):bg,color:'auto'},width:{size:colWidths[ci]||800,type:WidthType.DXA},borders:cellBorder}))});
+        })], width:{size:100,type:WidthType.PERCENTAGE} }),
+        new Paragraph({text:'', spacing:{after:300}}),
+        new Paragraph({children:[new TextRun({text:`${tr.title}   |   ${tr.generated}: ${now}   |   ${tr.total}: ${rows.length}`,italics:true,size:16,color:'5A6A7E'})]})
       ]}],
     });
     const buf = await Packer.toBuffer(doc);
     res.setHeader('Content-Disposition', `attachment; filename="tekshiruv-${lang}-${Date.now()}.docx"`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.send(buf);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Export xatosi' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Export xatosi: '+e.message }); }
 });
 
 // ─── Notifications ─────────────────────────────────────────────
