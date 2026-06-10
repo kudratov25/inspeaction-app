@@ -829,6 +829,16 @@
       border-radius: 3px;
       background: linear-gradient(90deg, var(--blue-dark), var(--blue-mid))
     }
+    .lang-sw { display:flex; gap:3px; align-items:center; }
+    .lang-btn { font-size:10px; font-weight:700; color:rgba(255,255,255,.55); background:rgba(255,255,255,.12); border:none; border-radius:5px; padding:3px 7px; cursor:pointer; letter-spacing:.3px; transition:all .15s; }
+    .lang-btn.active { color:#fff; background:rgba(255,255,255,.28); }
+    .export-row { display:flex; gap:8px; padding:0 14px 10px; }
+    .export-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding:9px 0; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-sm); font-size:12px; font-weight:600; color:var(--txt); cursor:pointer; transition:all .15s; }
+    .export-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .export-btn.word { border-color:#2B579A; color:#2B579A; }
+    .export-btn.word:hover { background:#EBF3FF; }
+    .export-btn.excel { border-color:#217346; color:#217346; }
+    .export-btn.excel:hover { background:#E8F5E9; }
   </style>
 </head>
 
@@ -882,15 +892,20 @@
     <div id="s-main" class="screen">
       <div class="topbar">
         <div style="flex:1">
-          <div style="font-size:10px;color:#90CAF9">Xush kelibsiz,</div>
+          <div style="font-size:10px;color:#90CAF9" id="m-welcome">Xush kelibsiz,</div>
           <div style="font-size:15px;font-weight:600;color:#fff" id="m-name">—</div>
         </div>
         <span id="m-role" class="role-pill r-a" style="font-size:11px;padding:3px 10px"></span>
-        <div class="tb-btn notif-bell" style="margin-left:6px" onclick="toggleNotifPanel()">
+        <div class="lang-sw" id="lang-sw">
+          <button class="lang-btn" onclick="changeLang('uz')">UZ</button>
+          <button class="lang-btn" onclick="changeLang('ru')">RU</button>
+          <button class="lang-btn" onclick="changeLang('en')">EN</button>
+        </div>
+        <div class="tb-btn notif-bell" style="margin-left:4px" onclick="toggleNotifPanel()">
           <i class="ti ti-bell" style="font-size:16px"></i>
           <div class="notif-dot" id="notif-dot"></div>
         </div>
-        <div class="tb-btn" style="margin-left:4px" onclick="goTab('profil')"><i class="ti ti-user"
+        <div class="tb-btn" style="margin-left:2px" onclick="goTab('profil')"><i class="ti ti-user"
             style="font-size:16px"></i></div>
       </div>
       <div class="notif-panel" id="notif-panel">
@@ -1054,8 +1069,137 @@
     <script>
       const TC = { Machine: 'r-l', Material: 'r-a', Man: 'r-p', Method: 'r-ad' };
       const RPILL = { assembler: 'r-a', logistics: 'r-l', production: 'r-p', admin: 'r-ad' };
-      const RLABEL = { assembler: "Yig'uvchi", logistics: 'Logistika', production: 'Production', admin: 'Admin' };
       let ME = null, curTab = 'home', curFilter = 'all', NOTIFS = [];
+
+      // ── i18n ──────────────────────────────────────────────────
+      const I18N = {
+        uz: {
+          roleLabel: { assembler:"Yig'uvchi", logistics:'Logistika', production:'Production', admin:'Admin' },
+          welcome:'Xush kelibsiz,', login:'Kirish', username:'Foydalanuvchi nomi', password:'Parol',
+          serverErr:"Server bilan bog'lanib bo'lmadi", loginErr:"Username yoki parol noto'g'ri",
+          nav:{ home:'Bosh sahifa', list:'Muammolar', add:"Qo'shish", users:'Foydalanuvchilar', profil:'Profil' },
+          status:{ open:'Ochiq', inprogress:'Jarayonda', closed:'Yopilgan' },
+          filters:{ all:'Hammasi', open:'Ochiq', inprogress:'Jarayonda', closed:'Yopilgan', risky:'⚠ Xavfli', overdue:'❗ Kechikkan', recurring:'Takroriy' },
+          roleMsg:{ assembler:"Siz kiritgan muammolar", logistics:"Logistikaga tegishli", production:"Barcha muammolar", admin:"Tizim — barcha yozuvlar" },
+          stats:{ total:'Jami', overdue:"Muddati o'tdi", risky:'Xavfli (≤2 kun)', recurring:'Takrorlanuvchi', closed:'Yopilgan' },
+          byLine:"Liniyalar bo'yicha", recent:"So'nggi muammolar", viewAll:"Barchasini ko'rish →",
+          overdueAlert:"ta muammo muddati o'tib ketdi!", overdueSub:'Zudlik bilan ko\'rib chiqing',
+          riskyAlert:"ta muammo muddati yaqinlashdi (≤2 kun)", riskySub:"Tezda ko'rib chiqing!",
+          notifTitle:'Ogohlantirish', notifEmpty:'Hamma muammo vaqtida yopilgan ✓',
+          deadline:'Muddat (deadline)', deadlineSave:'Saqlash', deadlineSaved:'Muddat saqlandi ✓',
+          deadlineHint:"Muammo yopilishi kerak bo'lgan sana",
+          today:'Bugun!', daysLeft:'kun qoldi', overdue_badge:'Kechikdi',
+          detail:'Batafsil', addNew:'Yangi muammo', basicInfo:"Asosiy ma'lumot",
+          fieldDate:'Sana', fieldTime:'Vaqt', fieldLine:'Liniya', fieldType:'Muammo turi',
+          fieldStation:'Stansiya', fieldAuditor:'Auditor', fieldProblem:'Muammo tavsifi',
+          fieldAction:'Harakat rejasi', fieldActionReq:"Harakat rejasini yangilash",
+          actionPlaceholder:'Muammoni batafsil yozing...', actionActPlaceholder:'Harakat rejasini yozing...',
+          stationPlaceholder:'T-01-01', photos:'Rasmlar', before:'Oldin', after:'Keyin',
+          uploadPhoto:'Rasm yuklash', uploaded:'✓ Yuklandi',
+          save:'Saqlash', saving:'Saqlanmoqda...', saved:'Muvaffaqiyatli saqlandi ✓',
+          setInProgress:'Jarayonda', close:'Yopish', closedMsg:'Muammo yopilgan', closedSub:'Hal qilindi',
+          actionRequired:'Yopish uchun harakat rejasi kiritilishi shart',
+          recurring_badge:'↺ Takror', markRecurring:'↺ Takroriy deb belgilash', unmarkRecurring:'Takroriy emas',
+          markedRecurring:'Takroriy deb belgilandi', unmarkedRecurring:'Belgi olib tashlandi',
+          inProgressSet:'Jarayonda belgilandi', closedSet:'Yopildi ✓',
+          resolutionRate:"Hal qilish darajasi", visibleRecords:"Ko'rinadigan yozuvlar",
+          openIssues:'Ochiq muammolar', logout:'Tizimdan chiqish',
+          users:"Foydalanuvchilar", addUser:'+ Yangi', newUser:'Yangi foydalanuvchi',
+          editUser:'Foydalanuvchini tahrirlash', fullName:"To'liq ism", role:'Rol', line:'Liniya',
+          newPassword:"Yangi parol", passwordHint:"(o'zgartirmasangiz bo'sh qoldiring)",
+          userAdded:"Foydalanuvchi qo'shildi ✓", userUpdated:"O'zgarishlar saqlandi ✓",
+          userDeleted:"O'chirildi", confirmDelete:'ni o\'chirishni tasdiqlaysizmi?',
+          allFields:'Barcha maydonlarni kiriting', usernameExists:'Bu username allaqachon mavjud',
+          cantDeleteSelf:"O'zingizni o'chira olmaysiz",
+          exportExcel:'Excel', exportWord:'Word', exportTitle:'Yuklab olish',
+          noRecords:'Muammo topilmadi',
+        },
+        ru: {
+          roleLabel: { assembler:'Сборщик', logistics:'Логистика', production:'Производство', admin:'Админ' },
+          welcome:'Добро пожаловать,', login:'Войти', username:'Имя пользователя', password:'Пароль',
+          serverErr:'Не удалось подключиться к серверу', loginErr:'Неверный логин или пароль',
+          nav:{ home:'Главная', list:'Проблемы', add:'Добавить', users:'Пользователи', profil:'Профиль' },
+          status:{ open:'Открыто', inprogress:'В процессе', closed:'Закрыто' },
+          filters:{ all:'Все', open:'Открыто', inprogress:'В процессе', closed:'Закрыто', risky:'⚠ Риск', overdue:'❗ Просрочено', recurring:'Повторные' },
+          roleMsg:{ assembler:'Мои проблемы', logistics:'Логистика', production:'Все проблемы', admin:'Все записи' },
+          stats:{ total:'Всего', overdue:'Просрочено', risky:'Риск (≤2 дня)', recurring:'Повторные', closed:'Закрыто' },
+          byLine:'По линиям', recent:'Последние проблемы', viewAll:'Смотреть все →',
+          overdueAlert:'проблем просрочено!', overdueSub:'Срочно рассмотрите',
+          riskyAlert:'проблем — срок скоро (≤2 дня)', riskySub:'Рассмотрите быстро!',
+          notifTitle:'Уведомления', notifEmpty:'Все проблемы закрыты вовремя ✓',
+          deadline:'Срок (дедлайн)', deadlineSave:'Сохранить', deadlineSaved:'Срок сохранён ✓',
+          deadlineHint:'Дата, к которой проблема должна быть закрыта',
+          today:'Сегодня!', daysLeft:'дн. осталось', overdue_badge:'Просрочено',
+          detail:'Подробнее', addNew:'Новая проблема', basicInfo:'Основная информация',
+          fieldDate:'Дата', fieldTime:'Время', fieldLine:'Линия', fieldType:'Тип проблемы',
+          fieldStation:'Станция', fieldAuditor:'Аудитор', fieldProblem:'Описание проблемы',
+          fieldAction:'План действий', fieldActionReq:'Обновить план действий',
+          actionPlaceholder:'Опишите проблему подробно...', actionActPlaceholder:'Напишите план действий...',
+          stationPlaceholder:'T-01-01', photos:'Фотографии', before:'До', after:'После',
+          uploadPhoto:'Загрузить фото', uploaded:'✓ Загружено',
+          save:'Сохранить', saving:'Сохранение...', saved:'Успешно сохранено ✓',
+          setInProgress:'В процессе', close:'Закрыть', closedMsg:'Проблема закрыта', closedSub:'Решено',
+          actionRequired:'Для закрытия необходимо указать план действий',
+          recurring_badge:'↺ Повтор', markRecurring:'↺ Отметить повторной', unmarkRecurring:'Снять отметку',
+          markedRecurring:'Отмечено как повторная', unmarkedRecurring:'Отметка снята',
+          inProgressSet:'Отмечено: в процессе', closedSet:'Закрыто ✓',
+          resolutionRate:'Уровень решения', visibleRecords:'Видимые записи',
+          openIssues:'Открытые проблемы', logout:'Выйти',
+          users:'Пользователи', addUser:'+ Новый', newUser:'Новый пользователь',
+          editUser:'Редактировать пользователя', fullName:'Полное имя', role:'Роль', line:'Линия',
+          newPassword:'Новый пароль', passwordHint:'(оставьте пустым, если не меняете)',
+          userAdded:'Пользователь добавлен ✓', userUpdated:'Изменения сохранены ✓',
+          userDeleted:'Удалено', confirmDelete:'удалить?',
+          allFields:'Заполните все поля', usernameExists:'Такой логин уже существует',
+          cantDeleteSelf:'Нельзя удалить себя',
+          exportExcel:'Excel', exportWord:'Word', exportTitle:'Скачать',
+          noRecords:'Проблем не найдено',
+        },
+        en: {
+          roleLabel: { assembler:'Assembler', logistics:'Logistics', production:'Production', admin:'Admin' },
+          welcome:'Welcome,', login:'Sign In', username:'Username', password:'Password',
+          serverErr:'Could not connect to server', loginErr:'Invalid username or password',
+          nav:{ home:'Dashboard', list:'Issues', add:'Add', users:'Users', profil:'Profile' },
+          status:{ open:'Open', inprogress:'In Progress', closed:'Closed' },
+          filters:{ all:'All', open:'Open', inprogress:'In Progress', closed:'Closed', risky:'⚠ Risky', overdue:'❗ Overdue', recurring:'Recurring' },
+          roleMsg:{ assembler:'My issues', logistics:'Logistics issues', production:'All issues', admin:'All records' },
+          stats:{ total:'Total', overdue:'Overdue', risky:'Risky (≤2 days)', recurring:'Recurring', closed:'Closed' },
+          byLine:'By Line', recent:'Recent Issues', viewAll:'View all →',
+          overdueAlert:'issues are overdue!', overdueSub:'Review urgently',
+          riskyAlert:'issues deadline approaching (≤2 days)', riskySub:'Review soon!',
+          notifTitle:'Notifications', notifEmpty:'All issues closed on time ✓',
+          deadline:'Deadline', deadlineSave:'Save', deadlineSaved:'Deadline saved ✓',
+          deadlineHint:'Date by which the issue must be closed',
+          today:'Today!', daysLeft:'days left', overdue_badge:'Overdue',
+          detail:'Detail', addNew:'New Issue', basicInfo:'Basic Information',
+          fieldDate:'Date', fieldTime:'Time', fieldLine:'Line', fieldType:'Issue Type',
+          fieldStation:'Station', fieldAuditor:'Auditor', fieldProblem:'Problem Description',
+          fieldAction:'Action Plan', fieldActionReq:'Update Action Plan',
+          actionPlaceholder:'Describe the problem in detail...', actionActPlaceholder:'Write action plan...',
+          stationPlaceholder:'T-01-01', photos:'Photos', before:'Before', after:'After',
+          uploadPhoto:'Upload photo', uploaded:'✓ Uploaded',
+          save:'Save', saving:'Saving...', saved:'Successfully saved ✓',
+          setInProgress:'In Progress', close:'Close', closedMsg:'Issue closed', closedSub:'Resolved',
+          actionRequired:'Action plan is required to close the issue',
+          recurring_badge:'↺ Recurring', markRecurring:'↺ Mark as recurring', unmarkRecurring:'Unmark recurring',
+          markedRecurring:'Marked as recurring', unmarkedRecurring:'Mark removed',
+          inProgressSet:'Marked in progress', closedSet:'Closed ✓',
+          resolutionRate:'Resolution rate', visibleRecords:'Visible records',
+          openIssues:'Open issues', logout:'Sign Out',
+          users:'Users', addUser:'+ New', newUser:'New User',
+          editUser:'Edit User', fullName:'Full Name', role:'Role', line:'Line',
+          newPassword:'New Password', passwordHint:'(leave blank to keep current)',
+          userAdded:'User added ✓', userUpdated:'Changes saved ✓',
+          userDeleted:'Deleted', confirmDelete:'delete?',
+          allFields:'Fill in all fields', usernameExists:'Username already exists',
+          cantDeleteSelf:"Can't delete yourself",
+          exportExcel:'Excel', exportWord:'Word', exportTitle:'Download',
+          noRecords:'No issues found',
+        },
+      };
+      let LANG = localStorage.getItem('lang') || 'uz';
+      const RLABEL = () => I18N[LANG].roleLabel;
+      function t(key) { return I18N[LANG][key] ?? key; }
 
       function $(id) { return document.getElementById(id) }
       function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); $(id).classList.add('active') }
@@ -1095,11 +1239,9 @@
           if (!r.ok) { $('l-err').textContent = d.error; return }
           ME = d.user;
           $('m-name').textContent = ME.name;
-          $('m-role').textContent = ME.roleLabel;
-          $('m-role').className = 'role-pill ' + RPILL[ME.role];
-          $('m-role').style.cssText = 'font-size:11px;padding:3px 10px';
-          buildNav(); showScreen('s-main'); renderHome().then(initScrollHide); loadNotifications();
-        } catch (e) { $('l-err').textContent = 'Server bilan bog\'lanib bo\'lmadi' }
+          updateTopbarRole();
+          buildNav(); showScreen('s-main'); renderHome().then(initScrollHide); loadNotifications(); updateLangButtons();
+        } catch (e) { $('l-err').textContent = t('serverErr') }
         finally { spin('login-spin', false); $('login-btn').disabled = false; }
       }
       $('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
@@ -1122,18 +1264,18 @@
 
       function renderNotifList() {
         if (!NOTIFS.length) {
-          $('notif-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--txt3);font-size:13px">Hamma muammo vaqtida yopilgan ✓</div>';
+          $('notif-list').innerHTML = `<div style="text-align:center;padding:16px;color:var(--txt3);font-size:13px">${t('notifEmpty')}</div>`;
           return;
         }
         $('notif-list').innerHTML = `
           <div style="font-size:10px;font-weight:700;color:var(--txt2);padding:8px 14px 4px;letter-spacing:.4px;text-transform:uppercase">
-            Ogohlantirish — ${NOTIFS.length} ta muammo
+            ${t('notifTitle')} — ${NOTIFS.length}
           </div>
           ${NOTIFS.map(r => `
             <div class="notif-item" onclick="toggleNotifPanel();showDetail(${r.id})">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
                 <span style="font-size:13px;font-weight:600;color:var(--txt)">${r.line} · ${r.station}</span>
-                <span class="badge ${r.isOverdue ? 'b-overdue' : 'b-risky'}">${r.isOverdue ? '❗ Kechikdi' : r.daysLeft === 0 ? '⚠ Bugun!' : `⚠ ${r.daysLeft} kun qoldi`}</span>
+                <span class="badge ${r.isOverdue ? 'b-overdue' : 'b-risky'}">${r.isOverdue ? `❗ ${t('overdue_badge')}` : r.daysLeft === 0 ? `⚠ ${t('today')}` : `⚠ ${r.daysLeft} ${t('daysLeft')}`}</span>
               </div>
               <div style="font-size:11px;color:var(--txt2);line-height:1.4">${r.problem.replace(/\n/g,' ').substring(0,55)}${r.problem.length>55?'...':''}</div>
               <div style="font-size:10px;color:var(--txt3);margin-top:2px;font-family:'DM Mono',monospace">Muddat: ${r.deadline}</div>
@@ -1141,19 +1283,47 @@
           `).join('')}`;
       }
 
+      function updateTopbarRole() {
+        const el = $('m-role');
+        if (!el || !ME) return;
+        el.textContent = t('roleLabel')[ME.role] || ME.roleLabel;
+        el.className = 'role-pill ' + RPILL[ME.role];
+        el.style.cssText = 'font-size:11px;padding:3px 10px';
+        const wel = $('m-welcome');
+        if (wel) wel.textContent = t('welcome');
+      }
+
+      function updateLangButtons() {
+        const btns = document.querySelectorAll('.lang-btn');
+        btns.forEach(b => b.classList.toggle('active', b.textContent === LANG.toUpperCase()));
+      }
+
+      function changeLang(l) {
+        LANG = l;
+        localStorage.setItem('lang', l);
+        updateLangButtons();
+        if (ME) updateTopbarRole();
+        buildNav();
+        if (curTab === 'home') renderHome().then(initScrollHide);
+        else if (curTab === 'list') renderList().then(initScrollHide);
+        else if (curTab === 'profil') renderProfil().then(initScrollHide);
+        else if (curTab === 'users') renderUsers().then(initScrollHide);
+      }
+
       function buildNav() {
         const isAdmin = ME.role === 'admin';
         const canAdd = ME.role === 'assembler' || isAdmin;
+        const nav = t('nav');
         const tabs = [
-          { id: 'home', icon: 'ti-layout-dashboard', label: 'Bosh sahifa' },
-          { id: 'list', icon: 'ti-list', label: 'Muammolar' },
-          ...(canAdd ? [{ id: 'add', icon: 'ti-circle-plus', label: "Qo'shish" }] : []),
-          ...(isAdmin ? [{ id: 'users', icon: 'ti-users', label: 'Foydalanuvchilar' }] : []),
-          { id: 'profil', icon: 'ti-user', label: 'Profil' },
+          { id: 'home', icon: 'ti-layout-dashboard', label: nav.home },
+          { id: 'list', icon: 'ti-list', label: nav.list },
+          ...(canAdd ? [{ id: 'add', icon: 'ti-circle-plus', label: nav.add }] : []),
+          ...(isAdmin ? [{ id: 'users', icon: 'ti-users', label: nav.users }] : []),
+          { id: 'profil', icon: 'ti-user', label: nav.profil },
         ];
-        $('bottomnav').innerHTML = tabs.map(t => `
-    <div class="navitem${t.id === curTab ? ' active' : ''}" onclick="goTab('${t.id}')">
-      <i class="ti ${t.icon}"></i><span>${t.label}</span>
+        $('bottomnav').innerHTML = tabs.map(tab => `
+    <div class="navitem${tab.id === curTab ? ' active' : ''}" onclick="goTab('${tab.id}')">
+      <i class="ti ${tab.icon}"></i><span>${tab.label}</span>
     </div>`).join('');
       }
 
@@ -1178,7 +1348,7 @@
       async function renderHome() {
         const [stats, recs] = await Promise.all([api('/api/stats'), api('/api/records')]);
         if (!stats || !recs) return;
-        const roleMsg = { assembler: "Siz kiritgan muammolar", logistics: "Logistikaga tegishli", production: "Barcha muammolar", admin: "Tizim — barcha yozuvlar" };
+        const st = t('stats'); const rm = t('roleMsg');
         const byLineHtml = Object.entries(stats.byLine || {}).sort((a,b)=>b[1]-a[1]).map(([line, cnt]) => {
           const pct = stats.total ? Math.round(cnt / stats.total * 100) : 0;
           return `<div class="breakdown-row">
@@ -1189,49 +1359,49 @@
         }).join('');
         $('main-content').innerHTML = `
     <div class="hero">
-      <div><div class="hero-num">${stats.total}</div><div class="hero-lbl">${roleMsg[ME.role] || ''}</div></div>
+      <div><div class="hero-num">${stats.total}</div><div class="hero-lbl">${rm[ME.role] || ''}</div></div>
       <div class="hero-div"></div>
-      <div style="text-align:center"><div class="hero-num" style="color:#FFD54F">${stats.open}</div><div class="hero-lbl" style="color:#FFCC80">Ochiq</div></div>
+      <div style="text-align:center"><div class="hero-num" style="color:#FFD54F">${stats.open}</div><div class="hero-lbl" style="color:#FFCC80">${t('status').open}</div></div>
       <div class="hero-div"></div>
-      <div style="text-align:center"><div class="hero-num" style="color:#90CAF9">${stats.inprogress || 0}</div><div class="hero-lbl" style="color:#90CAF9">Jarayonda</div></div>
+      <div style="text-align:center"><div class="hero-num" style="color:#90CAF9">${stats.inprogress || 0}</div><div class="hero-lbl" style="color:#90CAF9">${t('status').inprogress}</div></div>
       <div class="hero-div"></div>
-      <div style="text-align:right"><div class="hero-num" style="color:#81C784">${stats.closed}</div><div class="hero-lbl" style="color:#A5D6A7">Yopilgan</div></div>
+      <div style="text-align:right"><div class="hero-num" style="color:#81C784">${stats.closed}</div><div class="hero-lbl" style="color:#A5D6A7">${t('status').closed}</div></div>
     </div>
     ${stats.overdue > 0 ? `<div class="alert-box" style="background:var(--red-lt);border-color:#EF9A9A;cursor:pointer" onclick="viewFilter('overdue')">
       <i class="ti ti-alarm" style="font-size:20px;color:var(--red);flex-shrink:0"></i>
-      <div><div style="font-size:12px;font-weight:700;color:var(--red)">❗ ${stats.overdue} ta muammo muddati o'tib ketdi!</div>
-      <div style="font-size:11px;color:var(--red);opacity:.8;margin-top:1px">Zudlik bilan ko'rib chiqing</div></div>
+      <div><div style="font-size:12px;font-weight:700;color:var(--red)">❗ ${stats.overdue} ${t('overdueAlert')}</div>
+      <div style="font-size:11px;color:var(--red);opacity:.8;margin-top:1px">${t('overdueSub')}</div></div>
     </div>` : ''}
     ${stats.risky > 0 ? `<div class="alert-box" style="cursor:pointer" onclick="viewFilter('risky')">
       <i class="ti ti-alert-triangle" style="font-size:20px;color:var(--amber);flex-shrink:0"></i>
-      <div><div style="font-size:12px;font-weight:600;color:var(--amber)">⚠ ${stats.risky} ta muammo muddati yaqinlashdi (≤2 kun)</div>
-      <div style="font-size:11px;color:#E65100;margin-top:1px">Tezda ko'rib chiqing!</div></div>
+      <div><div style="font-size:12px;font-weight:600;color:var(--amber)">⚠ ${stats.risky} ${t('riskyAlert')}</div>
+      <div style="font-size:11px;color:#E65100;margin-top:1px">${t('riskySub')}</div></div>
     </div>` : ''}
     <div class="stat-grid" style="margin-bottom:12px">
       <div class="stat-box" style="cursor:pointer" onclick="viewFilter('overdue')">
         <div class="stat-num" style="color:var(--red)">${stats.overdue || 0}</div>
-        <div class="stat-lbl">Muddati o'tdi</div>
+        <div class="stat-lbl">${st.overdue}</div>
       </div>
       <div class="stat-box" style="cursor:pointer" onclick="viewFilter('risky')">
         <div class="stat-num" style="color:var(--amber)">${stats.risky || 0}</div>
-        <div class="stat-lbl">Xavfli (≤2 kun)</div>
+        <div class="stat-lbl">${st.risky}</div>
       </div>
       <div class="stat-box">
         <div class="stat-num" style="color:var(--purple)">${stats.recurring || 0}</div>
-        <div class="stat-lbl">Takrorlanuvchi</div>
+        <div class="stat-lbl">${st.recurring}</div>
       </div>
       <div class="stat-box">
         <div class="stat-num" style="color:var(--green)">${stats.closed || 0}</div>
-        <div class="stat-lbl">Yopilgan</div>
+        <div class="stat-lbl">${st.closed}</div>
       </div>
     </div>
     ${byLineHtml ? `<div class="det-block" style="margin-bottom:12px">
-      <div class="dl" style="margin-bottom:9px">Liniyalar bo'yicha</div>
+      <div class="dl" style="margin-bottom:9px">${t('byLine')}</div>
       ${byLineHtml}
     </div>` : ''}
-    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:9px;letter-spacing:.3px;text-transform:uppercase">So'nggi muammolar</div>
+    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:9px;letter-spacing:.3px;text-transform:uppercase">${t('recent')}</div>
     ${[...recs].reverse().slice(0, 4).map(r => card(r)).join('')}
-    <div style="text-align:center;padding:6px 0 2px"><span style="font-size:13px;color:var(--blue);font-weight:600;cursor:pointer" onclick="goTab('list')">Barchasini ko'rish →</span></div>`;
+    <div style="text-align:center;padding:6px 0 2px"><span style="font-size:13px;color:var(--blue);font-weight:600;cursor:pointer" onclick="goTab('list')">${t('viewAll')}</span></div>`;
       }
 
       async function renderList(f) {
@@ -1245,27 +1415,38 @@
         else if (curFilter === 'overdue')    filtered = recs.filter(x => x.isOverdue);
         else if (curFilter === 'recurring')  filtered = recs.filter(x => x.isRecurring);
         else if (['Trim','Chassis','Final'].includes(curFilter)) filtered = recs.filter(x => x.line === curFilter);
-        const filterLabels = { all:`Hammasi (${recs.length})`, open:'Ochiq', inprogress:'Jarayonda', closed:'Yopilgan',
-          risky:'⚠ Xavfli', overdue:'❗ Kechikkan', recurring:'Takroriy', Trim:'Trim', Chassis:'Chassis', Final:'Final' };
+        const fl = t('filters');
+        const filterLabels = { all:`${fl.all} (${recs.length})`, open:fl.open, inprogress:fl.inprogress, closed:fl.closed,
+          risky:fl.risky, overdue:fl.overdue, recurring:fl.recurring, Trim:'Trim', Chassis:'Chassis', Final:'Final' };
         $('main-content').innerHTML = `
     <div class="filter-row">
       ${['all','open','inprogress','closed','risky','overdue','Trim','Chassis','Final'].map(x =>
         `<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${filterLabels[x]||x}</div>`
       ).join('')}
     </div>
+    <div class="export-row">
+      <div class="export-btn excel" onclick="doExport('excel')"><i class="ti ti-file-spreadsheet" style="font-size:15px"></i>${t('exportExcel')}</div>
+      <div class="export-btn word" onclick="doExport('word')"><i class="ti ti-file-word" style="font-size:15px"></i>${t('exportWord')}</div>
+    </div>
     ${[...filtered].reverse().map(r => card(r)).join('')}
-    ${!filtered.length ? '<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px">Muammo topilmadi</div>' : ''}`;
+    ${!filtered.length ? `<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px">${t('noRecords')}</div>` : ''}`;
         initScrollHide();
+      }
+
+      function doExport(format) {
+        const url = `/api/export?format=${format}&lang=${LANG}`;
+        const a = document.createElement('a');
+        a.href = url; a.download = ''; a.click();
       }
 
       function card(r) {
         const borderClass = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card' : r.status === 'open' ? ' open-card' : '';
         const statusBadge = r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed';
-        const statusLabel = r.status === 'open' ? 'Ochiq' : r.status === 'inprogress' ? 'Jarayonda' : 'Yopilgan';
+        const st = t('status'); const statusLabel = st[r.status] || r.status;
         const dlBadge = r.deadline && r.status !== 'closed'
-          ? `<span class="badge ${r.isOverdue?'b-overdue':r.isRisky?'b-risky':'b-inprogress'}" style="margin-left:4px">${r.isOverdue?'❗ Kechikdi':r.daysLeft===0?'⚠ Bugun':`⏰ ${r.daysLeft} kun`}</span>`
+          ? `<span class="badge ${r.isOverdue?'b-overdue':r.isRisky?'b-risky':'b-inprogress'}" style="margin-left:4px">${r.isOverdue?`❗ ${t('overdue_badge')}`:r.daysLeft===0?`⚠ ${t('today')}`:`⏰ ${r.daysLeft} ${t('daysLeft')}`}</span>`
           : '';
-        const recurringBadge = r.isRecurring ? `<span style="font-size:9px;font-weight:700;color:var(--purple);background:var(--purple-lt);border-radius:20px;padding:2px 7px;margin-left:4px">↺ Takror</span>` : '';
+        const recurringBadge = r.isRecurring ? `<span style="font-size:9px;font-weight:700;color:var(--purple);background:var(--purple-lt);border-radius:20px;padding:2px 7px;margin-left:4px">${t('recurring_badge')}</span>` : '';
         return `<div class="card${borderClass}" onclick="showDetail(${r.id})">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1298,53 +1479,54 @@
         const me = await api('/api/me'); if (!me) return;
         const rc = me.roleCfg;
         const db = $('d-badge');
-        db.textContent = r.status === 'open' ? 'Ochiq' : r.status === 'inprogress' ? 'Jarayonda' : 'Yopilgan';
+        const st = t('status');
+        db.textContent = st[r.status] || r.status;
         db.className = 'badge ' + (r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed');
         $('detail-content').innerHTML = `
     <div class="det-block"><div class="det-grid">
-      <div><div class="dl">Sana</div><div class="dv" style="font-family:'DM Mono',monospace">${r.date}</div></div>
-      <div><div class="dl">Vaqt</div><div class="dv" style="font-family:'DM Mono',monospace">${r.time || '—'}</div></div>
-      <div><div class="dl">Liniya</div><div class="dv">${r.line}</div></div>
-      <div><div class="dl">Stansiya</div><div class="dv">${r.station}</div></div>
-      <div><div class="dl">Muammo turi</div><div class="dv"><span class="type-pill ${TC[r.type] || 'r-ad'}">${r.type}</span></div></div>
-      <div><div class="dl">Auditor</div><div class="dv">${r.auditor}</div></div>
+      <div><div class="dl">${t('fieldDate')}</div><div class="dv" style="font-family:'DM Mono',monospace">${r.date}</div></div>
+      <div><div class="dl">${t('fieldTime')}</div><div class="dv" style="font-family:'DM Mono',monospace">${r.time || '—'}</div></div>
+      <div><div class="dl">${t('fieldLine')}</div><div class="dv">${r.line}</div></div>
+      <div><div class="dl">${t('fieldStation')}</div><div class="dv">${r.station}</div></div>
+      <div><div class="dl">${t('fieldType')}</div><div class="dv"><span class="type-pill ${TC[r.type] || 'r-ad'}">${r.type}</span></div></div>
+      <div><div class="dl">${t('fieldAuditor')}</div><div class="dv">${r.auditor}</div></div>
     </div></div>
     <div class="det-block" style="${r.isOverdue?'border-left:3px solid var(--red)':r.isRisky?'border-left:3px solid var(--amber)':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <div class="dl">Muddat (Deadline)</div>
-        ${r.isOverdue?`<span class="badge b-overdue">❗ Kechikdi</span>`:r.isRisky?`<span class="badge b-risky">⚠ ${r.daysLeft===0?'Bugun!':r.daysLeft+' kun qoldi'}</span>`:''}
+        <div class="dl">${t('deadline')}</div>
+        ${r.isOverdue?`<span class="badge b-overdue">❗ ${t('overdue_badge')}</span>`:r.isRisky?`<span class="badge b-risky">⚠ ${r.daysLeft===0?t('today'):r.daysLeft+' '+t('daysLeft')}</span>`:''}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         ${rc.canAction && r.status !== 'closed' ? `<input type="date" class="inp" id="upd-deadline" value="${r.deadline||''}" style="flex:1">
-          <button class="btn btn-warn btn-sm" onclick="saveDeadline(${r.id})">Saqlash</button>`
+          <button class="btn btn-warn btn-sm" onclick="saveDeadline(${r.id})">${t('deadlineSave')}</button>`
           : `<div class="dv" style="font-family:'DM Mono',monospace">${r.deadline||'—'}</div>`}
       </div>
-      ${r.isRecurring?`<div style="margin-top:8px;font-size:11px;font-weight:700;color:var(--purple)">↺ Takrorlanuvchi muammo sifatida belgilangan</div>`:''}
+      ${r.isRecurring?`<div style="margin-top:8px;font-size:11px;font-weight:700;color:var(--purple)">${t('recurring_badge')} — marked</div>`:''}
     </div>
-    <div class="det-block"><div class="dl" style="margin-bottom:5px">Muammo tavsifi</div><div class="dv" style="line-height:1.6;white-space:pre-line">${r.problem}</div></div>
-    <div class="det-block"><div class="dl" style="margin-bottom:5px">Harakat rejasi</div><div class="dv" style="line-height:1.6">${r.action}</div></div>
-    ${r.imgBefore || r.imgAfter ? `<div class="det-block"><div class="dl" style="margin-bottom:8px">Rasmlar</div>
+    <div class="det-block"><div class="dl" style="margin-bottom:5px">${t('fieldProblem')}</div><div class="dv" style="line-height:1.6;white-space:pre-line">${r.problem}</div></div>
+    <div class="det-block"><div class="dl" style="margin-bottom:5px">${t('fieldAction')}</div><div class="dv" style="line-height:1.6">${r.action}</div></div>
+    ${r.imgBefore || r.imgAfter ? `<div class="det-block"><div class="dl" style="margin-bottom:8px">${t('photos')}</div>
       <div style="display:flex;gap:12px">
-        ${r.imgBefore ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">OLDIN</div><img src="${r.imgBefore}" onclick="openLB('${r.imgBefore}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
-        ${r.imgAfter ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">KEYIN</div><img src="${r.imgAfter}" onclick="openLB('${r.imgAfter}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
+        ${r.imgBefore ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">${t('before').toUpperCase()}</div><img src="${r.imgBefore}" onclick="openLB('${r.imgBefore}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
+        ${r.imgAfter ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">${t('after').toUpperCase()}</div><img src="${r.imgAfter}" onclick="openLB('${r.imgAfter}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
       </div></div>`: ''}
     ${rc.canAction && r.status !== 'closed' ? `
     <div class="det-block">
-      <div class="dl" style="margin-bottom:7px">Harakat rejasini yangilash <span style="color:var(--red)">*</span></div>
-      <textarea class="inp" id="upd-action" style="margin-bottom:8px" placeholder="Yopish uchun harakat rejasi majburiy">${r.action === '—' ? '' : r.action}</textarea>
+      <div class="dl" style="margin-bottom:7px">${t('fieldActionReq')} <span style="color:var(--red)">*</span></div>
+      <textarea class="inp" id="upd-action" style="margin-bottom:8px" placeholder="${t('actionRequired')}">${r.action === '—' ? '' : r.action}</textarea>
       <div id="upd-err" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:6px"></div>
       <div style="display:flex;gap:7px">
-        ${r.status === 'open' ? `<button class="btn btn-warn" style="padding:10px" onclick="setStatus(${r.id},'inprogress')"><i class="ti ti-loader" style="font-size:15px"></i>Jarayonda</button>` : ''}
-        ${rc.canClose ? `<button class="btn btn-success" style="padding:10px" onclick="setStatus(${r.id},'closed')"><i class="ti ti-check" style="font-size:15px"></i>Yopish</button>` : ''}
+        ${r.status === 'open' ? `<button class="btn btn-warn" style="padding:10px" onclick="setStatus(${r.id},'inprogress')"><i class="ti ti-loader" style="font-size:15px"></i>${t('setInProgress')}</button>` : ''}
+        ${rc.canClose ? `<button class="btn btn-success" style="padding:10px" onclick="setStatus(${r.id},'closed')"><i class="ti ti-check" style="font-size:15px"></i>${t('close')}</button>` : ''}
       </div>
     </div>
     ${(me.role==='admin'||me.role==='production') ? `<div class="det-block">
-      <div class="dl" style="margin-bottom:7px">Muammo turi</div>
+      <div class="dl" style="margin-bottom:7px">${t('fieldType')}</div>
       <button class="btn ${r.isRecurring?'btn-danger':'btn-warn'} btn-sm" onclick="toggleRecurring(${r.id},${!r.isRecurring})">
-        <i class="ti ti-refresh" style="font-size:14px"></i>${r.isRecurring?'Takroriy emas':'↺ Takroriy deb belgilash'}
+        <i class="ti ti-refresh" style="font-size:14px"></i>${r.isRecurring?t('unmarkRecurring'):t('markRecurring')}
       </button>
     </div>` : ''}`: ''}
-    ${r.status === 'closed' ? `<div style="background:var(--green-lt);border-radius:var(--r-sm);border:1px solid #A5D6A7;padding:13px;display:flex;align-items:center;gap:10px"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green)"></i><div><div style="font-size:13px;font-weight:600;color:var(--green)">Muammo yopilgan</div><div style="font-size:11px;color:var(--green);opacity:.8;margin-top:1px">Hal qilindi</div></div></div>` : ''}
+    ${r.status === 'closed' ? `<div style="background:var(--green-lt);border-radius:var(--r-sm);border:1px solid #A5D6A7;padding:13px;display:flex;align-items:center;gap:10px"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green)"></i><div><div style="font-size:13px;font-weight:600;color:var(--green)">${t('closedMsg')}</div><div style="font-size:11px;color:var(--green);opacity:.8;margin-top:1px">${t('closedSub')}</div></div></div>` : ''}
     <div style="height:20px"></div>`;
         showScreen('s-detail');
       }
@@ -1352,13 +1534,13 @@
       async function setStatus(id, st) {
         const action = $('upd-action')?.value?.trim() || '';
         if (st === 'closed' && !action) {
-          if ($('upd-err')) $('upd-err').textContent = 'Yopish uchun harakat rejasi kiritilishi shart';
+          if ($('upd-err')) $('upd-err').textContent = t('actionRequired');
           return;
         }
         if ($('upd-err')) $('upd-err').textContent = '';
         const r = await api(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify({ status: st, action }) });
         if (r && !r.error) {
-          toast(st === 'closed' ? 'Yopildi ✓' : 'Jarayonda belgilandi');
+          toast(st === 'closed' ? t('closedSet') : t('inProgressSet'));
           showDetail(id);
           loadNotifications();
         } else {
@@ -1371,49 +1553,51 @@
       async function saveDeadline(id) {
         const deadline = $('upd-deadline')?.value || null;
         const r = await api(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify({ deadline }) });
-        if (r && !r.error) { toast('Muddat saqlandi ✓'); showDetail(id); loadNotifications(); }
+        if (r && !r.error) { toast(t('deadlineSaved')); showDetail(id); loadNotifications(); }
         else toast(r?.error || 'Xato', false);
       }
 
       async function toggleRecurring(id, val) {
         const r = await api(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify({ is_recurring: val }) });
-        if (r && !r.error) { toast(val ? 'Takroriy deb belgilandi' : 'Belgi olib tashlandi'); showDetail(id); }
+        if (r && !r.error) { toast(val ? t('markedRecurring') : t('unmarkedRecurring')); showDetail(id); }
         else toast(r?.error || 'Xato', false);
       }
 
       async function renderProfil() {
         const [stats, me] = await Promise.all([api('/api/stats'), api('/api/me')]); if (!stats || !me) return;
         const pct = stats.total ? Math.round(stats.closed / stats.total * 100) : 0;
+        const st = t('stats');
         $('main-content').innerHTML = `
     <div style="background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border-radius:var(--r);padding:18px;margin-bottom:14px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(21,101,192,.25)">
       <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff">${me.name.slice(0, 2).toUpperCase()}</div>
       <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:#fff">${me.name}</div><div style="font-size:11px;color:#90CAF9;margin-top:2px">${me.line}</div></div>
-      <span class="role-pill ${RPILL[me.role]}" style="font-size:12px;padding:4px 14px">${me.roleLabel}</span>
+      <span class="role-pill ${RPILL[me.role]}" style="font-size:12px;padding:4px 14px">${t('roleLabel')[me.role] || me.roleLabel}</span>
     </div>
     <div class="stat-grid">
-      <div class="stat-box"><div class="stat-num">${stats.total}</div><div class="stat-lbl">Ko'rinadigan yozuvlar</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${stats.open}</div><div class="stat-lbl">Ochiq muammolar</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${stats.inprogress || 0}</div><div class="stat-lbl">Jarayonda</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${stats.closed}</div><div class="stat-lbl">Yopilgan</div></div>
+      <div class="stat-box"><div class="stat-num">${stats.total}</div><div class="stat-lbl">${t('visibleRecords')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${stats.open}</div><div class="stat-lbl">${t('openIssues')}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${stats.inprogress || 0}</div><div class="stat-lbl">${t('status').inprogress}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${stats.closed}</div><div class="stat-lbl">${st.closed}</div></div>
     </div>
     <div style="background:var(--surface);border-radius:var(--r-sm);border:1px solid var(--border);padding:12px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--txt2);font-weight:600">Hal qilish darajasi</span><span style="font-size:12px;font-weight:700;color:var(--blue);font-family:'DM Mono',monospace">${pct}%</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--txt2);font-weight:600">${t('resolutionRate')}</span><span style="font-size:12px;font-weight:700;color:var(--blue);font-family:'DM Mono',monospace">${pct}%</span></div>
       <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid));border-radius:4px"></div></div>
     </div>
     <div class="menu-wrap" style="margin-bottom:12px">
       <div class="menu-row"><div class="menu-icon" style="background:var(--blue-lt)"><i class="ti ti-user" style="font-size:17px;color:var(--blue)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">${me.name}</div><div style="font-size:11px;color:var(--txt3)">${me.username} · ${me.line}</div></div></div>
-      <div class="menu-row"><div class="menu-icon" style="background:var(--purple-lt)"><i class="ti ti-shield" style="font-size:17px;color:var(--purple)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">Rol</div><div style="font-size:11px;color:var(--txt3)">${me.roleLabel}</div></div></div>
+      <div class="menu-row"><div class="menu-icon" style="background:var(--purple-lt)"><i class="ti ti-shield" style="font-size:17px;color:var(--purple)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">${t('role')}</div><div style="font-size:11px;color:var(--txt3)">${t('roleLabel')[me.role] || me.roleLabel}</div></div></div>
     </div>
-    <button class="btn btn-danger" onclick="doLogout()"><i class="ti ti-logout" style="font-size:17px"></i>Tizimdan chiqish</button>
+    <button class="btn btn-danger" onclick="doLogout()"><i class="ti ti-logout" style="font-size:17px"></i>${t('logout')}</button>
     <div style="height:20px"></div>`;
       }
 
       async function renderUsers() {
         const users = await api('/api/users'); if (!users) return;
+        const rl = t('roleLabel');
         $('main-content').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px">Foydalanuvchilar (${users.length})</div>
-      <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="ti ti-user-plus" style="font-size:14px"></i>Yangi</button>
+      <div style="font-size:11px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px">${t('users')} (${users.length})</div>
+      <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="ti ti-user-plus" style="font-size:14px"></i>${t('addUser')}</button>
     </div>
     <div class="menu-wrap">
       ${users.map(u => `
@@ -1424,7 +1608,7 @@
             <div style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${u.username} · ${u.line || '—'}</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
-            <span class="role-pill ${RPILL[u.role]}">${RLABEL[u.role]}</span>
+            <span class="role-pill ${RPILL[u.role]}">${rl[u.role] || u.role}</span>
             <button onclick="openEditModal(${u.id},'${u.username}','${u.full_name}','${u.role}','${u.line||''}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-edit" style="font-size:16px;color:var(--blue)"></i></button>
             <button onclick="deleteUser(${u.id},'${u.username}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-trash" style="font-size:16px;color:var(--txt3)"></i></button>
           </div>
@@ -1454,31 +1638,31 @@
         const role = $('eu-role').value;
         const line = $('eu-line').value.trim();
         const password = $('eu-pass').value;
-        if (!full_name) { $('eu-err').textContent = 'Ism kiritilishi shart'; return; }
+        if (!full_name) { $('eu-err').textContent = t('allFields'); return; }
         const res = await api(`/api/users/${_editUserId}`, {
           method: 'PATCH',
           body: JSON.stringify({ full_name, role, line, password })
         });
         if (!res || res.error) { $('eu-err').textContent = res?.error || 'Xato'; return; }
-        toast("O'zgarishlar saqlandi ✓");
+        toast(t('userUpdated'));
         closeEditModal();
         renderUsers();
       }
 
       async function saveUser() {
         const u = $('nu-user').value.trim(), p = $('nu-pass').value.trim(), n = $('nu-name').value.trim(), r = $('nu-role').value, l = $('nu-line').value.trim();
-        if (!u || !p || !n) { $('nu-err').textContent = 'Barcha maydonlarni kiriting'; return }
+        if (!u || !p || !n) { $('nu-err').textContent = t('allFields'); return }
         const res = await api('/api/users', { method: 'POST', body: JSON.stringify({ username: u, password: p, full_name: n, role: r, line: l }) });
         if (!res || res.error) { $('nu-err').textContent = res?.error || 'Xato'; return }
-        toast("Foydalanuvchi qo'shildi ✓"); closeUserModal();
+        toast(t('userAdded')); closeUserModal();
         $('nu-user').value = ''; $('nu-pass').value = ''; $('nu-name').value = ''; $('nu-line').value = '';
         renderUsers();
       }
 
       async function deleteUser(id, username) {
-        if (!confirm(`"${username}" ni o'chirishni tasdiqlaysizmi?`)) return;
+        if (!confirm(`"${username}" ${t('confirmDelete')}`)) return;
         const r = await api(`/api/users/${id}`, { method: 'DELETE' });
-        if (r?.ok) { toast("O'chirildi"); renderUsers() }
+        if (r?.ok) { toast(t('userDeleted')); renderUsers() }
         else toast(r?.error || 'Xato', false);
       }
 
@@ -1519,7 +1703,7 @@
           const r = await fetch('/api/records', { method: 'POST', body: fd });
           const d = await r.json();
           if (!r.ok) { $('a-err').textContent = d.error; return }
-          toast('Muvaffaqiyatli saqlandi ✓');
+          toast(t('saved'));
           curTab = 'list'; buildNav(); showNav(); showScreen('s-main'); renderList('all').then(initScrollHide);
         } catch (e) { $('a-err').textContent = 'Xato yuz berdi' }
         finally { spin('save-spin', false); $('save-btn').disabled = false; }
@@ -1540,10 +1724,8 @@
           if (!u || !u.role) return;
           ME = { id: u.id, username: u.username, name: u.name, role: u.role, line: u.line, roleLabel: u.roleLabel };
           $('m-name').textContent = ME.name;
-          $('m-role').textContent = ME.roleLabel;
-          $('m-role').className = 'role-pill ' + RPILL[ME.role];
-          $('m-role').style.cssText = 'font-size:11px;padding:3px 10px';
-          buildNav(); showScreen('s-main');
+          updateTopbarRole();
+          buildNav(); showScreen('s-main'); updateLangButtons();
           renderHome().then(initScrollHide);
           loadNotifications();
         } catch (_) {}

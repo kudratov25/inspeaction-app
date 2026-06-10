@@ -6,6 +6,8 @@ const multer         = require('multer');
 const path           = require('path');
 const fs             = require('fs');
 const bcrypt         = require('bcryptjs');
+const XLSX           = require('xlsx');
+const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, HeadingLevel, AlignmentType, WidthType, BorderStyle } = require('docx');
 const { pool, initDB } = require('./db');
 
 const app  = express();
@@ -298,6 +300,93 @@ function dbToClient(r) {
     isOverdue,
   };
 }
+
+// ─── Export translations ────────────────────────────────────────
+const EXPORT_I18N = {
+  uz: {
+    title: 'Tekshiruv Nazorat — Muammolar Ro\'yxati',
+    generated: 'Yaratildi',
+    headers: ['#', 'Sana', 'Vaqt', 'Liniya', 'Tur', 'Stansiya', 'Auditor', 'Muammo', 'Harakat rejasi', 'Status', 'Muddat', 'Qo\'shgan'],
+    status: { open: 'Ochiq', inprogress: 'Jarayonda', closed: 'Yopilgan' },
+    total: 'Jami',
+  },
+  ru: {
+    title: 'Система контроля — Список проблем',
+    generated: 'Создано',
+    headers: ['#', 'Дата', 'Время', 'Линия', 'Тип', 'Станция', 'Аудитор', 'Проблема', 'План действий', 'Статус', 'Срок', 'Добавил'],
+    status: { open: 'Открыто', inprogress: 'В процессе', closed: 'Закрыто' },
+    total: 'Итого',
+  },
+  en: {
+    title: 'Inspection Control — Issue List',
+    generated: 'Generated',
+    headers: ['#', 'Date', 'Time', 'Line', 'Type', 'Station', 'Auditor', 'Problem', 'Action Plan', 'Status', 'Deadline', 'Added By'],
+    status: { open: 'Open', inprogress: 'In Progress', closed: 'Closed' },
+    total: 'Total',
+  },
+};
+
+// ─── Export ─────────────────────────────────────────────────────
+app.get('/api/export', auth, async (req, res) => {
+  try {
+    const lang   = ['uz','ru','en'].includes(req.query.lang) ? req.query.lang : 'uz';
+    const format = req.query.format === 'word' ? 'word' : 'excel';
+    const tr     = EXPORT_I18N[lang];
+    const { clause, params } = visibleWhere(req.session.user);
+    const { rows } = await pool.query(`SELECT * FROM records ${clause} ORDER BY created_at ASC`, params);
+    const now = new Date().toLocaleDateString('uz-UZ');
+
+    if (format === 'excel') {
+      const data = [tr.headers, ...rows.map((r, i) => [
+        i + 1, r.date, r.time, r.line, r.type, r.station, r.auditor,
+        r.problem, r.action, tr.status[r.status] || r.status,
+        r.deadline || '—', r.added_by,
+      ])];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = [4,8,6,8,10,10,10,30,30,12,10,10].map(w => ({ wch: w }));
+      // bold header row
+      tr.headers.forEach((_, ci) => {
+        const cell = XLSX.utils.encode_cell({ r: 0, c: ci });
+        if (ws[cell]) ws[cell].s = { font: { bold: true } };
+      });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, tr.title.substring(0, 31));
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      res.setHeader('Content-Disposition', `attachment; filename="tekshiruv-${lang}-${Date.now()}.xlsx"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      return res.send(buf);
+    }
+
+    // Word
+    const headerCells = tr.headers.map(h => new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 18 })], alignment: AlignmentType.CENTER })],
+      shading: { fill: '1565C0' },
+      width: { size: Math.floor(9000 / tr.headers.length), type: WidthType.DXA },
+    }));
+    const dataRows = rows.map((r, i) => new TableRow({
+      children: [
+        i+1, r.date, r.time, r.line, r.type, r.station, r.auditor,
+        r.problem, r.action, tr.status[r.status]||r.status,
+        r.deadline||'—', r.added_by,
+      ].map(val => new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: String(val ?? '—'), size: 16 })] })],
+        width: { size: Math.floor(9000 / tr.headers.length), type: WidthType.DXA },
+      })),
+    }));
+    const doc = new Document({
+      sections: [{ properties: { page: { size: { orientation: 'landscape' } } }, children: [
+        new Paragraph({ text: tr.title, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [new TextRun({ text: `${tr.generated}: ${now}  |  ${tr.total}: ${rows.length}`, italics: true, size: 18 })] }),
+        new Paragraph({ text: '' }),
+        new Table({ rows: [new TableRow({ children: headerCells, tableHeader: true }), ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } }),
+      ]}],
+    });
+    const buf = await Packer.toBuffer(doc);
+    res.setHeader('Content-Disposition', `attachment; filename="tekshiruv-${lang}-${Date.now()}.docx"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Export xatosi' }); }
+});
 
 // ─── Notifications ─────────────────────────────────────────────
 app.get('/api/notifications', auth, async (req, res) => {
