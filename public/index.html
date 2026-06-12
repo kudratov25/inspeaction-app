@@ -654,15 +654,21 @@
     }
 
     .login-logo {
-      width: 72px;
-      height: 72px;
-      background: rgba(255, 255, 255, .15);
-      border-radius: 20px;
+      width: 150px;
+      height: 150px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, .20);
-      border: 1px solid rgba(255, 255, 255, .2)
+      background: #fff;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+
+    .login-logo img {
+      width: 120%;
+      height: 130%;
+      object-fit: contain;
     }
 
     .login-card {
@@ -870,7 +876,7 @@
   <div id="app">
 
     <div id="s-login" class="screen active">
-      <div class="login-logo"><i class="ti ti-clipboard-check" style="font-size:32px;color:#fff"></i></div>
+      <div class="login-logo"><img src="/logo-byd.png" alt="BYD Logo"></div>
       <div style="text-align:center">
         <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px">Tekshiruv Nazorat</div>
         <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Inspection Control System</div>
