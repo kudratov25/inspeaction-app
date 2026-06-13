@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express        = require('express');
+const http           = require('http');
+const { Server }     = require('socket.io');
 const session        = require('express-session');
 const pgSession      = require('connect-pg-simple')(session);
 const multer         = require('multer');
@@ -10,8 +12,10 @@ const XLSX           = require('xlsx');
 const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, HeadingLevel, AlignmentType, WidthType, BorderStyle } = require('docx');
 const { pool, initDB } = require('./db');
 
-const app  = express();
-const PORT = process.env.PORT || 3000;
+const app    = express();
+const server = http.createServer(app);
+const io     = new Server(server);
+const PORT   = process.env.PORT || 3000;
 app.set('trust proxy', 1);
 
 // ─── Upload ────────────────────────────────────────────────────
@@ -25,11 +29,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ─── Middleware ────────────────────────────────────────────────
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadDir));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
+const sessionMiddleware = session({
   store: new pgSession({ pool, tableName: 'session', createTableIfMissing: true }),
   secret: process.env.SESSION_SECRET || 'inspection-secret-dev',
   resave: false,
@@ -39,7 +39,54 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
   },
-}));
+});
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(uploadDir));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(sessionMiddleware);
+
+// ── Socket.io ──────────────────────────────────────────────────
+io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
+
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+  const user = socket.request.session?.user;
+  if (!user) { socket.disconnect(); return; }
+
+  onlineUsers.set(socket.id, { username: user.username, name: user.name, role: user.role });
+  io.emit('online', [...onlineUsers.values()]);
+
+  socket.on('join', async (room) => {
+    socket.rooms.forEach(r => { if (r !== socket.id) socket.leave(r); });
+    socket.join(room);
+    try {
+      const { rows } = await pool.query(
+        'SELECT * FROM chat_messages WHERE room=$1 ORDER BY created_at DESC LIMIT 60',
+        [room]
+      );
+      socket.emit('history', rows.reverse());
+    } catch(e) {}
+  });
+
+  socket.on('message', async ({ text, room }) => {
+    if (!text?.trim()) return;
+    try {
+      const { rows } = await pool.query(
+        'INSERT INTO chat_messages (username,full_name,text,room) VALUES ($1,$2,$3,$4) RETURNING *',
+        [user.username, user.name, text.trim(), room || 'umumiy']
+      );
+      io.to(room).emit('message', rows[0]);
+    } catch(e) {}
+  });
+
+  socket.on('disconnect', () => {
+    onlineUsers.delete(socket.id);
+    io.emit('online', [...onlineUsers.values()]);
+  });
+});
 
 // ─── Role config ───────────────────────────────────────────────
 const ROLES = {
@@ -512,12 +559,23 @@ app.get('/api/notifications', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Server xatosi' }); }
 });
 
+// ─── Chat history ──────────────────────────────────────────────
+app.get('/api/chat/:room', auth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM chat_messages WHERE room=$1 ORDER BY created_at ASC LIMIT 100',
+      [req.params.room]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── SPA fallback ──────────────────────────────────────────────
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── Start ─────────────────────────────────────────────────────
 initDB().then(() => {
-  app.listen(PORT, () => console.log(`✅  Running on http://localhost:${PORT}`));
+  server.listen(PORT, () => console.log(`✅  Running on http://localhost:${PORT}`));
 }).catch(err => {
   console.error('❌  DB init failed:', err.message);
   process.exit(1);

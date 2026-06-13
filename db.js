@@ -46,6 +46,17 @@ async function initDB() {
       ALTER TABLE records ADD COLUMN IF NOT EXISTS resolved_by VARCHAR(50);
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        full_name VARCHAR(100) NOT NULL,
+        text TEXT NOT NULL,
+        room VARCHAR(50) DEFAULT 'umumiy',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // Seed default users if table is empty
     const { rowCount } = await client.query('SELECT 1 FROM users LIMIT 1');
     if (rowCount === 0) {
