@@ -5,10 +5,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>Tekshiruv Nazorat</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1565C0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TekshiruN">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     :root {
       --blue: #1565C0;
@@ -56,10 +63,22 @@
       background: var(--bg);
       display: flex;
       flex-direction: column;
-      box-shadow: 0 0 60px rgba(0, 0, 0, .2)
+      box-shadow: 0 0 60px rgba(0, 0, 0, .2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #wm-layer {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      display: none;
     }
 
     .screen {
+      position: relative;
+      z-index: 1;
       display: none;
       flex-direction: column;
       flex: 1;
@@ -171,20 +190,34 @@
       background: var(--surface);
       border-radius: var(--r);
       border: 1px solid var(--border);
-      padding: 12px;
-      margin-bottom: 10px;
+      border-left: 4px solid var(--border);
+      overflow: hidden;
       cursor: pointer;
       box-shadow: var(--shadow-sm);
-      transition: transform .12s
+      transition: transform .12s, box-shadow .12s;
+      display: flex;
+      flex-direction: column;
     }
-
-    .card:active {
-      transform: scale(.985)
+    .card:active { transform: scale(.987); box-shadow: none }
+    .c-head {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      background: var(--bg);
     }
-
-    .card.open-card {
-      border-left: 3px solid var(--amber)
+    .c-body { padding: 10px 12px; flex: 1; }
+    .c-title { font-size: 13px; font-weight: 700; color: var(--txt); margin-bottom: 4px; }
+    .c-prob  { font-size: 12px; color: var(--txt2); line-height: 1.5; }
+    .c-foot  {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 12px; border-top: 1px solid var(--border);
+      background: var(--bg);
     }
+    .c-dept-l { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#FFF3E0;color:#E65100; }
+    .c-dept-p { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#E8F5E9;color:#2E7D32; }
+    .c-dl-ok   { font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace; }
+    .c-dl-risk { font-size:11px;color:var(--amber);font-weight:600; }
+    .c-dl-late { font-size:11px;color:var(--red);font-weight:600; }
+    .card.open-card { border-left-color: var(--amber) }
 
     .badge {
       font-size: 10px;
@@ -513,6 +546,29 @@
       box-shadow: var(--shadow-sm)
     }
 
+    .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0 }
+    .toggle-switch input { opacity:0; width:0; height:0 }
+    .toggle-slider {
+      position:absolute; cursor:pointer; inset:0;
+      background:#CBD5E1; border-radius:24px; transition:.25s;
+    }
+    .toggle-slider:before {
+      content:''; position:absolute;
+      width:18px; height:18px; border-radius:50%;
+      left:3px; top:3px; background:#fff;
+      transition:.25s; box-shadow:0 1px 3px rgba(0,0,0,.2)
+    }
+    .toggle-switch input:checked + .toggle-slider { background:var(--blue) }
+    .toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px) }
+
+    .prof-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 0; border-bottom:1px solid var(--border)
+    }
+    .prof-row:last-child { border-bottom:none }
+    .prof-lbl { font-size:12px; color:var(--txt3) }
+    .prof-val { font-size:13px; font-weight:600; color:var(--txt); text-align:right }
+
     .menu-row {
       display: flex;
       align-items: center;
@@ -567,17 +623,40 @@
       cursor: pointer;
       background: var(--bg)
     }
+    .upload-box i  { font-size: 24px; color: var(--txt3) }
+    .upload-box span { font-size: 11px; color: var(--txt3); text-align: center; line-height: 1.4 }
 
-    .upload-box i {
-      font-size: 24px;
-      color: var(--txt3)
+    .media-grid {
+      display: flex; flex-wrap: wrap; gap: 7px;
+      min-height: 68px; padding: 7px;
+      background: var(--bg);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--r-sm);
     }
-
-    .upload-box span {
-      font-size: 11px;
-      color: var(--txt3);
-      text-align: center;
-      line-height: 1.4
+    .media-add-btn {
+      width: 58px; height: 58px; border-radius: 9px;
+      background: var(--blue-lt); border: 1.5px dashed var(--blue);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; cursor: pointer; color: var(--blue); flex-shrink: 0;
+    }
+    .media-add-btn i { font-size: 18px }
+    .media-add-btn span { font-size: 9px; font-weight: 600 }
+    .media-thumb {
+      position: relative; width: 58px; height: 58px;
+      border-radius: 9px; overflow: hidden;
+      border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; display: block }
+    .media-thumb .vid-icon {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.35);
+    }
+    .media-thumb .rm-btn {
+      position: absolute; top: 2px; right: 2px;
+      width: 17px; height: 17px; border-radius: 50%;
+      background: rgba(0,0,0,.65); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; cursor: pointer; line-height: 1;
     }
 
     .user-row {
@@ -782,10 +861,32 @@
 
     .b-risky { background: var(--amber-lt); color: var(--amber) }
     .b-overdue { background: var(--red-lt); color: var(--red) }
-    .card.risky-card { border-left: 3px solid var(--amber) }
-    .card.overdue-card { border-left: 3px solid var(--red) }
+    .ab-open{background:#FFF8E1;color:#F59E0B} .ab-processing{background:#EFF6FF;color:#3B82F6}
+    .ab-pending{background:#F5F3FF;color:#8B5CF6} .ab-closed{background:#ECFDF5;color:#22C55E}
+    .ab-overdue{background:#FEF2F2;color:#EF4444}
+    .ab-lv-low{background:#ECFDF5;color:#22C55E} .ab-lv-medium{background:#FFF8E1;color:#F59E0B}
+    .ab-lv-high{background:#FFF7ED;color:#EA580C} .ab-lv-critical{background:#FEF2F2;color:#EF4444}
+    .card.risky-card  { border-left-color: var(--amber) }
+    .card.overdue-card{ border-left-color: var(--red) }
+    .card.closed-card { border-left-color: var(--green) }
+    .card.prog-card   { border-left-color: var(--blue) }
 
     .topbar-wrap { position: relative; flex-shrink: 0; z-index: 200; }
+    .offline-bar {
+      display: none; align-items: center; gap: 8px; justify-content: center;
+      background: #ef4444; color: #fff; padding: 7px 16px;
+      font-size: 12px; font-weight: 600; letter-spacing: .01em;
+    }
+    .draft-bar {
+      display: none; align-items: center; gap: 8px; justify-content: space-between;
+      background: #d97706; color: #fff; padding: 6px 14px;
+      font-size: 12px; font-weight: 600;
+    }
+    .draft-bar-btn {
+      background: rgba(0,0,0,.18); border: none; color: #fff;
+      font-size: 11px; font-weight: 700; padding: 3px 11px;
+      border-radius: 20px; cursor: pointer; white-space: nowrap;
+    }
     .notif-panel {
       position: absolute;
       top: 100%; left: 0; right: 0;
@@ -809,6 +910,18 @@
 
     .notif-bell {
       position: relative
+    }
+    .notif-badge {
+      position: absolute;
+      top: 2px; right: 2px;
+      min-width: 16px; height: 16px;
+      background: var(--red);
+      border-radius: 20px;
+      border: 1.5px solid var(--blue-dark);
+      display: none;
+      font-size: 9px; font-weight: 700; color: #fff;
+      align-items: center; justify-content: center;
+      padding: 0 3px;
     }
     .notif-dot {
       position: absolute;
@@ -865,42 +978,138 @@
     .export-row { display:flex; gap:8px; padding:0 14px 10px; }
     .export-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding:9px 0; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-sm); font-size:12px; font-weight:600; color:var(--txt); cursor:pointer; transition:all .15s; }
     .export-btn:hover { border-color:var(--blue); color:var(--blue); }
-    .export-btn.word { border-color:#2B579A; color:#2B579A; }
-    .export-btn.word:hover { background:#EBF3FF; }
-    .export-btn.excel { border-color:#217346; color:#217346; }
+.export-btn.excel { border-color:#217346; color:#217346; }
     .export-btn.excel:hover { background:#E8F5E9; }
-    /* ── Chat ───────────────────────────────────────────── */
-    .chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px);min-height:300px}
-    .chat-rooms{display:flex;gap:5px;overflow-x:auto;padding:0 0 8px;flex-shrink:0}
-    .chat-rooms::-webkit-scrollbar{display:none}
-    .room-chip{padding:5px 13px;border-radius:20px;font-size:12px;white-space:nowrap;border:1px solid var(--border);background:var(--surface);color:var(--txt2);cursor:pointer;font-weight:600;flex-shrink:0;transition:all .15s}
-    .room-chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-    .chat-msgs{flex:1;overflow-y:auto;padding-bottom:4px}
-    .chat-msgs::-webkit-scrollbar{width:3px}
-    .chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-    .msg-row{display:flex;gap:8px;margin-bottom:10px}
-    .msg-row.mine{flex-direction:row-reverse}
-    .msg-av{width:28px;height:28px;border-radius:50%;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--blue);flex-shrink:0;margin-top:2px}
-    .msg-body{max-width:75%}
-    .msg-name{font-size:10px;font-weight:700;color:var(--txt3);margin-bottom:2px}
-    .msg-row.mine .msg-name{text-align:right}
-    .msg-bubble{padding:8px 11px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word}
-    .msg-row:not(.mine) .msg-bubble{background:var(--surface);border:1px solid var(--border);color:var(--txt);border-radius:4px 14px 14px 14px}
-    .msg-row.mine .msg-bubble{background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));color:#fff;border-radius:14px 4px 14px 14px}
-    .msg-time{font-size:9px;color:var(--txt3);margin-top:3px;font-family:'DM Mono',monospace}
-    .msg-row.mine .msg-time{text-align:right}
-    .chat-input-row{display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);flex-shrink:0}
-    .chat-inp{flex:1;padding:10px 13px;border:1px solid var(--border);border-radius:22px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--txt);outline:none}
-    .chat-inp:focus{border-color:var(--blue)}
-    .chat-send{background:var(--blue);border:none;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
-    .online-bar{display:flex;align-items:center;gap:6px;padding:5px 0 7px;flex-shrink:0;flex-wrap:wrap}
-    .online-dot{width:7px;height:7px;border-radius:50%;background:#4CAF50;flex-shrink:0}
-    .online-chip{font-size:10px;background:var(--green-lt);color:var(--green);border-radius:10px;padding:2px 8px;font-weight:600}
+
+    /* ── Desktop responsive ─────────────────────────────── */
+    @media (min-width: 768px) {
+      body { background: #E2E8F0; align-items: flex-start; }
+
+      #app {
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        min-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      /* s-main: sidebar + content grid */
+      #s-main {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        grid-template-rows: auto 1fr;
+        grid-template-areas: "nav topbar" "nav content";
+        min-height: 100vh;
+        flex: 1;
+      }
+
+      #s-main .topbar-wrap { grid-area: topbar; }
+      #s-main .content     { grid-area: content; padding: 20px 28px; }
+      #s-main #bottomnav   {
+        grid-area: nav;
+        flex-direction: column;
+        align-items: stretch;
+        border-top: none;
+        border-right: 1px solid var(--border);
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        overflow-y: auto;
+        background: var(--surface);
+        transform: none !important;
+        padding-top: 8px;
+      }
+
+      /* Sidebar logo area */
+      #s-main #bottomnav::before {
+        content: 'Tekshiruv Nazorat';
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--blue);
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 8px;
+        letter-spacing: -.2px;
+      }
+
+      .navitem {
+        flex: 0;
+        padding: 11px 20px;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-top: none;
+        border-left: 3px solid transparent;
+        border-radius: 0;
+      }
+      .navitem.active {
+        border-top: none;
+        border-left: 3px solid var(--blue);
+        background: var(--blue-lt);
+      }
+      .navitem i  { display: inline; margin-bottom: 0; font-size: 17px; }
+      .navitem span { font-size: 13px; font-weight: 500; display: inline; }
+
+      /* Cards: 2-column grid on wide screens */
+      #main-content .card { margin-bottom: 12px; }
+
+      /* Detail & Add screens: centered column */
+      #s-detail, #s-add {
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      #s-detail .content, #s-add .content {
+        padding: 24px 32px;
+      }
+
+      /* Login screen: limit form width on desktop */
+      #s-login { padding: 48px 24px; }
+      #s-login .login-card,
+      #s-login .lang-sw,
+      #s-login #demo-section { max-width: 400px; }
+
+      /* Modal wider */
+      .modal-box { max-width: 520px; }
+
+      /* Topbar on desktop: slightly taller */
+      .topbar { padding: 16px 24px 14px; }
+    }
+
+    @media (min-width: 1100px) {
+      .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    }
+
+    .cards-grid { display: flex; flex-direction: column; gap: 8px; padding: 0 14px; }
+    /* ── Line sections ── */
+    .line-section { margin: 0 14px 10px; }
+    .line-hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: var(--r-sm);
+      cursor: pointer; user-select: none;
+      border-left: 4px solid; margin-bottom: 0;
+      transition: opacity .15s;
+    }
+    .line-hdr:active { opacity: .8; }
+    .lh-icon { font-size: 15px; }
+    .lh-name { font-weight: 700; font-size: 13px; flex: 1; }
+    .lh-count {
+      font-size: 11px; font-weight: 700;
+      padding: 2px 9px; border-radius: 20px;
+    }
+    .lh-chev { font-size: 14px; transition: transform .2s; }
+    .line-section.collapsed .lh-chev { transform: rotate(-90deg); }
+    .line-cards { padding-top: 6px; }
+    .line-section.collapsed .line-cards { display: none; }
   </style>
 </head>
 
 <body>
   <div id="app">
+    <div id="wm-layer"></div>
 
     <div id="s-login" class="screen active">
       <div class="login-logo"><img src="/logo-byd.png" alt="BYD Logo"></div>
@@ -955,18 +1164,29 @@
           <div style="flex:1">
             <div style="font-size:10px;color:#90CAF9" id="m-welcome">Xush kelibsiz,</div>
             <div style="font-size:15px;font-weight:600;color:#fff" id="m-name">—</div>
+            <div style="font-size:10px;color:#90CAF9;margin-top:1px" id="m-position"></div>
           </div>
-          <span id="m-role" class="role-pill r-a" style="font-size:11px;padding:3px 10px"></span>
+          <span id="m-role" style="font-size:10px;color:#90CAF9;font-weight:600"></span>
           <button class="lang-trigger" id="lang-trigger" onclick="toggleLangPanel()" style="margin-left:4px">
             <i class="ti ti-language" style="font-size:15px;opacity:.8"></i>
             <span id="lang-current">UZ</span>
           </button>
           <div class="tb-btn notif-bell" style="margin-left:4px" onclick="toggleNotifPanel()">
             <i class="ti ti-bell" style="font-size:16px"></i>
-            <div class="notif-dot" id="notif-dot"></div>
+            <div class="notif-badge" id="notif-badge"></div>
           </div>
           <div class="tb-btn" style="margin-left:2px" onclick="goTab('profil')"><i class="ti ti-user"
               style="font-size:16px"></i></div>
+        </div>
+        <div class="offline-bar" id="offline-bar">
+          <i class="ti ti-wifi-off" style="font-size:15px"></i>
+          <span>Internet yo'q — muammo qoralamaga saqlanadi</span>
+        </div>
+        <div class="draft-bar" id="draft-bar">
+          <span id="draft-bar-txt"></span>
+          <button class="draft-bar-btn" onclick="syncDrafts()">
+            <i class="ti ti-upload" style="font-size:12px;vertical-align:-1px"></i> Yuborish
+          </button>
         </div>
         <div class="lang-panel" id="lang-panel">
           <div id="lang-list"></div>
@@ -998,16 +1218,16 @@
       <div class="content">
         <div id="a-role-hint"></div>
         <div class="sec-lbl" id="add-sec-basic"><i class="ti ti-info-circle" style="font-size:13px"></i>Asosiy ma'lumot</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:12px">
           <div class="field" style="margin:0"><label id="lbl-date">Sana</label><input class="inp" type="date" id="a-date"></div>
           <div class="field" style="margin:0"><label id="lbl-time">Vaqt</label><input class="inp" type="time" id="a-time"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:8px">
           <div class="field" style="margin:0"><label id="lbl-line">Liniya</label>
-            <select class="inp" id="a-line">
-              <option>Trim</option>
-              <option>Chassis</option>
-              <option>Final</option>
+            <select class="inp" id="a-line" onchange="updateStationSelect()">
+              <option value="Welding">Welding</option>
+              <option value="Painting">Painting</option>
+              <option value="General Assembly">General Assembly</option>
             </select>
           </div>
           <div class="field" style="margin:0"><label id="lbl-type">Muammo turi</label>
@@ -1024,15 +1244,21 @@
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label id="lbl-station">Stansiya</label><input class="inp" id="a-station" placeholder="T-01-01"></div>
+          <div class="field" style="margin:0"><label id="lbl-station">Stansiya</label>
+            <select class="inp" id="a-station"></select>
+          </div>
           <div class="field" style="margin:0"><label id="lbl-auditor">Auditor</label>
             <select class="inp" id="a-auditor"></select>
           </div>
         </div>
         <div id="a-deadline-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
-          <div class="field" style="margin:0"><label id="lbl-deadline">Muddat</label><input class="inp" type="date" id="a-deadline"></div>
-          <div class="field" style="margin:0"><label>&nbsp;</label>
-            <div style="font-size:11px;color:var(--txt3);padding-top:8px;line-height:1.4" id="lbl-deadline-hint">Muammo yopilishi kerak bo'lgan sana</div>
+          <div class="field" style="margin:0">
+            <label id="lbl-deadline">Muddat <span style="font-size:9px;color:var(--txt3)">(yopilish sanasi)</span></label>
+            <input class="inp" type="date" id="a-deadline">
+          </div>
+          <div class="field" style="margin:0">
+            <label id="lbl-resp-dept">Mas'ul bo'lim</label>
+            <input class="inp" id="a-dept" placeholder="Bo'lim nomini kiriting" autocomplete="off">
           </div>
         </div>
         <div class="field"><label id="lbl-problem">Muammo tavsifi</label><textarea class="inp" id="a-prob" placeholder="Muammoni batafsil yozing..."></textarea></div>
@@ -1041,17 +1267,13 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
           <div>
             <label id="lbl-before" style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Oldin</label>
-            <div class="upload-box" id="box-before" onclick="document.getElementById('f-before').click()">
-              <i class="ti ti-cloud-upload"></i><span id="upload-before-txt">Rasm yuklash</span>
-            </div>
-            <input type="file" id="f-before" accept="image/*" style="display:none" onchange="prevImg('before',this)">
+            <div class="media-grid" id="grid-before"></div>
+            <input type="file" id="f-before" accept="image/*,video/*" multiple style="display:none" onchange="addMedia('before',this)">
           </div>
           <div id="a-after-wrap">
             <label id="lbl-after" style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.2px">Keyin</label>
-            <div class="upload-box" id="box-after" onclick="document.getElementById('f-after').click()">
-              <i class="ti ti-cloud-upload"></i><span id="upload-after-txt">Rasm yuklash</span>
-            </div>
-            <input type="file" id="f-after" accept="image/*" style="display:none" onchange="prevImg('after',this)">
+            <div class="media-grid" id="grid-after"></div>
+            <input type="file" id="f-after" accept="image/*,video/*" multiple style="display:none" onchange="addMedia('after',this)">
           </div>
         </div>
         <div id="a-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-bottom:8px"></div>
@@ -1059,6 +1281,17 @@
           <i class="ti ti-device-floppy" style="font-size:17px"></i><span id="save-btn-txt">Saqlash</span>
           <div class="spinner" id="save-spin"></div>
         </button>
+
+        <!-- ── Qo'shilgan muammolar ro'yxati ── -->
+        <div style="margin-top:22px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:#EDE7F6;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="ti ti-list" style="font-size:14px;color:#6A1B9A"></i>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--txt)" id="add-rlist-title">Qo'shilgan muammolar</div>
+          </div>
+          <div id="add-records-list"><div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px"><div class="spinner" style="display:inline-block;margin:0 auto 8px"></div><br>Yuklanmoqda...</div></div>
+        </div>
         <div style="height:24px"></div>
       </div>
     </div>
@@ -1075,6 +1308,7 @@
         <div class="field"><label>Username</label><input class="inp" id="nu-user" placeholder="username"></div>
         <div class="field"><label id="lbl-nu-pass">Parol</label><input class="inp" type="password" id="nu-pass" placeholder="••••••"></div>
         <div class="field"><label id="lbl-nu-name">To'liq ism</label><input class="inp" id="nu-name" placeholder="Ism Familiya"></div>
+        <div class="field"><label>Korporativ email</label><input class="inp" type="email" id="nu-email" placeholder="ism@byd.com"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
           <div class="field" style="margin:0"><label id="lbl-nu-role">Rol</label>
             <select class="inp" id="nu-role">
@@ -1099,6 +1333,7 @@
         </div>
         <div class="field"><label>Username</label><input class="inp" id="eu-user" disabled style="opacity:.5;cursor:not-allowed"></div>
         <div class="field"><label id="lbl-eu-name">To'liq ism</label><input class="inp" id="eu-name" placeholder="Ism Familiya"></div>
+        <div class="field"><label>Korporativ email</label><input class="inp" type="email" id="eu-email" placeholder="ism@byd.com"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
           <div class="field" style="margin:0"><label id="lbl-eu-role">Rol</label>
             <select class="inp" id="eu-role">
@@ -1136,8 +1371,102 @@
         <div style="height:8px"></div>
       </div>
     </div>
+    <!-- Audit Add Modal -->
+    <div id="audit-add-modal" class="modal-overlay" onclick="if(event.target===this)closeAuditAdd()">
+      <div class="modal-sheet" style="max-height:92vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:15px;font-weight:600;color:var(--txt)" id="aa-modal-title">Yangi Audit muammosi</span>
+          <button onclick="closeAuditAdd()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="field" style="margin:0">
+            <label id="aa-lbl-ws" style="font-size:11px">Sex/Workshop *</label>
+            <select class="inp" id="aa-workshop" style="font-size:12px" onchange="aaUpdateLine()">
+              <option value="Welding">Welding</option>
+              <option value="Painting">Painting</option>
+              <option value="General Assembly">General Assembly</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label id="aa-lbl-ln" style="font-size:11px">Liniya *</label>
+            <select class="inp" id="aa-line" style="font-size:12px" onchange="aaUpdateStation()">
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label id="aa-lbl-st" style="font-size:11px">Stansiya *</label>
+            <select class="inp" id="aa-station" style="font-size:12px">
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="field" style="margin:0"><label id="aa-lbl-qc" style="font-size:11px">Savol kodi *</label><input class="inp" id="aa-qcode" placeholder="Q-001"></div>
+          <div class="field" style="margin:0"><label id="aa-lbl-cat" style="font-size:11px">Muammo turi *</label><input class="inp" id="aa-category" placeholder="Sifat, Xavfsizlik..."></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="field" style="margin:0"><label id="aa-lbl-lv" style="font-size:11px">Daraja *</label>
+            <select class="inp" id="aa-level">
+              <option value="Low" id="aa-opt-low">Past</option>
+              <option value="Medium" id="aa-opt-mid" selected>O'rta</option>
+              <option value="High" id="aa-opt-high">Yuqori</option>
+              <option value="Critical" id="aa-opt-crit">Kritik</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0"><label id="aa-lbl-dd" style="font-size:11px">Topgan bo'lim *</label><input class="inp" id="aa-disc-dept" placeholder="QC, Engineering..."></div>
+        </div>
+        <div class="field"><label id="aa-lbl-desc" style="font-size:11px">Batafsil tavsif *</label><textarea class="inp" id="aa-desc" rows="3" placeholder="Muammoni batafsil yozing..."></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="field" style="margin:0"><label id="aa-lbl-resp" style="font-size:11px">Mas'ul shaxs *</label><input class="inp" id="aa-resp" placeholder="Ism Familiya"></div>
+          <div class="field" style="margin:0"><label id="aa-lbl-dl" style="font-size:11px">Yakunlash muddati *</label><input class="inp" type="date" id="aa-deadline"></div>
+        </div>
+        <div class="field">
+          <label id="aa-lbl-media" style="font-size:11px">Ilova (rasm/video, ixtiyoriy)</label>
+          <div class="media-grid" id="aa-grid"></div>
+          <input type="file" id="aa-file" accept="image/*,video/*" multiple style="display:none" onchange="addAuditMedia(this)">
+        </div>
+        <div id="aa-err" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:6px"></div>
+        <button class="btn btn-primary" onclick="saveAuditAdd()"><i class="ti ti-device-floppy" style="font-size:17px"></i> <span id="aa-save-txt">Saqlash</span></button>
+        <div style="height:8px"></div>
+      </div>
+    </div>
+
+    <!-- Audit View/Edit Modal -->
+    <div id="audit-view-modal" class="modal-overlay" onclick="if(event.target===this)closeAuditView()">
+      <div class="modal-sheet" style="max-height:92vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <span style="font-size:15px;font-weight:600;color:var(--txt)" id="av-title">Audit tafsiloti</span>
+          <button onclick="closeAuditView()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
+        </div>
+        <div id="av-body"></div>
+      </div>
+    </div>
+
+    <!-- Checklist Manage Modal (Admin) -->
+    <div id="check-manage-modal" class="modal-overlay" onclick="if(event.target===this)closeCheckManage()">
+      <div class="modal-sheet" style="max-height:92vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <span style="font-size:15px;font-weight:600;color:var(--txt)" id="cm-title">Savollarni boshqarish</span>
+          <button onclick="closeCheckManage()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
+        </div>
+        <div id="check-manage-body"></div>
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="modal-overlay" onclick="if(event.target===this)closeQR()" style="display:none;z-index:9999">
+      <div class="modal-sheet" style="max-width:320px;margin:auto;text-align:center;padding:24px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:14px;font-weight:700;color:var(--txt)" id="qr-title">QR Kod</span>
+          <button onclick="closeQR()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
+        </div>
+        <canvas id="qr-canvas" style="border-radius:12px;border:2px solid var(--border);display:block;margin:0 auto 12px"></canvas>
+        <div id="qr-label" style="font-size:11px;color:var(--txt3);margin-bottom:14px;word-break:break-all"></div>
+        <button class="btn btn-primary btn-sm" style="width:100%" onclick="printQR()">
+          <i class="ti ti-printer" style="font-size:14px"></i> Chop etish / Print
+        </button>
+      </div>
+    </div>
+
     <div class="toast" id="toast"></div>
-    <script src="/socket.io/socket.io.js"></script>
     <script>
       const TC = { Machine: 'r-l', Material: 'r-a', Man: 'r-p', Method: 'r-ad', Measurement: 'r-l', Quality: 'r-p', Change: 'r-ad', 'Safety Issue': 'r-a' };
       const RPILL = { assembler: 'r-a', logistics: 'r-l', production: 'r-p', admin: 'r-ad' };
@@ -1192,6 +1521,66 @@
           quickAcceptBtn:"Qabul qilish", respDept:"Mas'ul bo'lim", resolvedBy:"Hal qildi",
           deptLogistics:"Logistika", deptProduction:"Production",
           quickCloseTitle:"Muammoni yopish", qcLabel:"Harakat rejasi",
+          auditSub:"Muammo boshqaruvi",
+          auditSt:{ open:'Ochiq', processing:'Jarayonda', pending_verification:'Tekshirishda', closed:'Yopilgan', overdue:'Kechikkan' },
+          auditLv:{ Low:'Past', Medium:"O'rta", High:'Yuqori', Critical:'Kritik' },
+          auditNoData:"Ma'lumot yo'q", auditNoDataSub:"Ma'lumot yo'q, qo'shing",
+          auditSearch:"Qidirish", auditReset:"Tozalash",
+          auditSaved:"Audit muammosi qo'shildi ✓", auditUpdated:"Saqlandi ✓",
+          auditStatusOk:"Holat yangilandi ✓", auditClosed:"Yopildi ✓", auditDeleted:"O'chirildi",
+          auditConfirmDel:"O'chirishni tasdiqlaysizmi?",
+          auditFillAll:"Barcha * maydonlarni to'ldiring",
+          auditDeadlineErr:"Muddat bugundan oldinroq bo'lmasligi kerak",
+          auditCorrectiveReq:"Tuzatish chorasini kiriting",
+          auditCompleted:"Completed",
+          auditNextBtn:{ open:"Jarayonga o'tkazish →", processing:"Tekshirishga yuborish →", pending_verification:"Yopish ✓" },
+          auditNextCls:{ open:"btn-warn", processing:"btn-warn", pending_verification:"btn-success" },
+          auditAddTitle:"Yangi Audit muammosi",
+          auditWorkshop:"Sex/Workshop", auditLine:"Liniya", auditStation:"Stansiya",
+          auditQCode:"Savol kodi", auditCategory:"Muammo turi", auditLevel:"Daraja",
+          auditDiscDept:"Topgan bo'lim", auditDesc:"Batafsil tavsif",
+          auditResp:"Mas'ul shaxs", auditDeadline:"Yakunlash muddati",
+          auditMedia:"Ilova (rasm/video, ixtiyoriy)",
+          auditLvOpts:["Past","O'rta","Yuqori","Kritik"],
+          auditEditTitle:"Tahrirlash", auditProcessLabel:"Jarayon", auditCorrLabel:"Tuzatish chorasi",
+          auditProgressPh:"Bajarilgan ishlar...", auditCorrPh:"Qanday tuzatish qilindi...",
+          auditAttach:"Ilova", auditDelete:"O'chirish", auditAddedBy:"Qo'shgan",
+          auditFoundDept:"Topgan bo'lim", auditProbCat:"Muammo turi", auditProbLvl:"Muammo darajasi",
+          auditClosedBy:"Yopdi",
+          checkNav:"Kunlik", checkTitle:"Kunlik Tekshiruv",
+          checkStatus:"Kunlik tekshiruv holati", checkNok:"ta NOK",
+          checkNoItems:"Savollar yo'q", checkManage:"Savollarni boshqarish",
+          checkAddTitle:"Yangi savol qo'shish", checkCat:"Kategoriya",
+          checkQ:"Savol", checkSub:"Sub-label (ixtiyoriy)", checkOrd:"Tartib №",
+          checkAdd:"Qo'shish", checkAll:"Barcha savollar",
+          checkActive:"Faol", checkInactive:"Nofaol", checkSaved:"Savol qo'shildi ✓",
+          checkDeleted:"O'chirildi", checkConfirmDel:"O'chirishni tasdiqlaysizmi?",
+          checkAllDone:"Barcha savollar javoblandi ✓",
+          greetNight:"Yaxshi tun 🌙", greetMorning:"Xayrli tong ☀️",
+          greetAfternoon:"Xayrli kun 🌤", greetEvening:"Xayrli kech 🌆",
+          statJami:"JAMI", statOpen:"OCHIQ", statInprog:"JARAYON", statClosed:"YOPILGAN",
+          quickAdd:"Muammo\nQo'shish", quickAudit:"Jarayon\nAuditi",
+          quickCheck:"Kunlik\nTekshiruv", quickList:"Barcha\nRo'yxat",
+          deptStat:(tot,op,cl)=>`${tot} ta · ${op} ochiq · ${cl} yopilgan`,
+          profDept:"Texnologiyalar departamenti", profDeptShort:"Texnologiyalar",
+          profSettings:"Sozlamalar", profChangePass:"Parol o'zgartirish", profNotif:"Bildirishnomalar",
+          profPersonal:"Shaxsiy ma'lumot", profUsernameLabel:"Foydalanuvchi nomi",
+          profPosition:"Lavozim", profDeptLine:"Bo'lim / Liniya", profDeptLabel:"Departament",
+          profCurrPass:"Joriy parol", profConfirmPass:"Yangi parolni takrorlang",
+          profPassChanged:"Parol muvaffaqiyatli o'zgartirildi ✓",
+          profResolution:"Hal qilish ko'rsatkichi",
+          closedOfTotal:(c,t)=>`${c} ta yopilgan / ${t} ta jami`,
+          profRating:"Reyting", ratingLbl:"Reyting",
+          ratingHint:"Muddatida yopilmagan muammolar uchun reyting pasayadi",
+          topRating:"TOP-5 reyting", fullRanking:"To'liq reyting", seeAll:"Barchasi",
+          youLbl:"siz", downloadExcel:"Excel",
+          totalIssues:"Umumiy muammolar", overallStatus:"Umumiy holat",
+          closedPct:"yopilgan", overdueLbl:"Kechikkan",
+          deptRanking:"Departamentlar reytingi", deptRankingSub:"Hal qilish foizi bo'yicha",
+          recentAll:"Umumiy so'nggi muammolar", noIssues:"Muammolar yo'q",
+          openCount:(n)=>`${n} ta ochiq`,
+          notifNewIssues:"Yangi muammolar", markAllRead:"Barchasini o'qildi",
+          deadlineNear:"Muddat yaqin", networkError:"Tarmoq xatosi", errLabel:"Xato",
         },
         ru: {
           roleLabel: { assembler:'Сборщик', logistics:'Логистика', production:'Производство', admin:'Админ' },
@@ -1240,6 +1629,66 @@
           quickAcceptBtn:"Принять", respDept:"Ответственный", resolvedBy:"Решил",
           deptLogistics:"Логистика", deptProduction:"Производство",
           quickCloseTitle:"Закрыть проблему", qcLabel:"План действий",
+          auditSub:"Управление проблемами",
+          auditSt:{ open:'Открыто', processing:'В процессе', pending_verification:'На проверке', closed:'Закрыто', overdue:'Просрочено' },
+          auditLv:{ Low:'Низкий', Medium:'Средний', High:'Высокий', Critical:'Критический' },
+          auditNoData:"Нет данных", auditNoDataSub:"Добавьте данные",
+          auditSearch:"Поиск", auditReset:"Сброс",
+          auditSaved:"Аудит проблема добавлена ✓", auditUpdated:"Сохранено ✓",
+          auditStatusOk:"Статус обновлён ✓", auditClosed:"Закрыто ✓", auditDeleted:"Удалено",
+          auditConfirmDel:"Подтвердить удаление?",
+          auditFillAll:"Заполните все * поля",
+          auditDeadlineErr:"Срок не может быть раньше сегодня",
+          auditCorrectiveReq:"Введите корректирующие меры",
+          auditCompleted:"Completed",
+          auditNextBtn:{ open:"Перевести в процесс →", processing:"Отправить на проверку →", pending_verification:"Закрыть ✓" },
+          auditNextCls:{ open:"btn-warn", processing:"btn-warn", pending_verification:"btn-success" },
+          auditAddTitle:"Новая проблема аудита",
+          auditWorkshop:"Цех/Воркшоп", auditLine:"Линия", auditStation:"Станция",
+          auditQCode:"Код вопроса", auditCategory:"Тип проблемы", auditLevel:"Уровень",
+          auditDiscDept:"Отдел обнаружения", auditDesc:"Описание проблемы",
+          auditResp:"Ответственный", auditDeadline:"Срок завершения",
+          auditMedia:"Прикрепить (фото/видео, необязательно)",
+          auditLvOpts:["Низкий","Средний","Высокий","Критический"],
+          auditEditTitle:"Редактирование", auditProcessLabel:"Процесс", auditCorrLabel:"Корректирующие меры",
+          auditProgressPh:"Выполненные работы...", auditCorrPh:"Что было исправлено...",
+          auditAttach:"Вложение", auditDelete:"Удалить", auditAddedBy:"Добавил",
+          auditFoundDept:"Отдел обнаружения", auditProbCat:"Тип проблемы", auditProbLvl:"Уровень проблемы",
+          auditClosedBy:"Закрыл",
+          checkNav:"Ежедн.", checkTitle:"Ежедневная проверка",
+          checkStatus:"Статус ежедневной проверки", checkNok:"шт NOK",
+          checkNoItems:"Вопросы не добавлены", checkManage:"Управление вопросами",
+          checkAddTitle:"Добавить вопрос", checkCat:"Категория",
+          checkQ:"Вопрос", checkSub:"Sub-label (необяз.)", checkOrd:"Порядок №",
+          checkAdd:"Добавить", checkAll:"Все вопросы",
+          checkActive:"Активен", checkInactive:"Неактивен", checkSaved:"Вопрос добавлен ✓",
+          checkDeleted:"Удалено", checkConfirmDel:"Подтвердить удаление?",
+          checkAllDone:"Все вопросы отвечены ✓",
+          greetNight:"Доброй ночи 🌙", greetMorning:"Доброе утро ☀️",
+          greetAfternoon:"Добрый день 🌤", greetEvening:"Добрый вечер 🌆",
+          statJami:"ВСЕГО", statOpen:"ОТКР.", statInprog:"В РАБ.", statClosed:"ЗАКР.",
+          quickAdd:"Добавить\nпроблему", quickAudit:"Аудит\nпроцессов",
+          quickCheck:"Ежедневная\nпроверка", quickList:"Все\nзаписи",
+          deptStat:(tot,op,cl)=>`${tot} · ${op} откр. · ${cl} закр.`,
+          profDept:"Отдел Технологий", profDeptShort:"Технологии",
+          profSettings:"Настройки", profChangePass:"Изменить пароль", profNotif:"Уведомления",
+          profPersonal:"Личные данные", profUsernameLabel:"Имя пользователя",
+          profPosition:"Должность", profDeptLine:"Отдел / Линия", profDeptLabel:"Отдел",
+          profCurrPass:"Текущий пароль", profConfirmPass:"Подтвердите новый пароль",
+          profPassChanged:"Пароль успешно изменён ✓",
+          profResolution:"Уровень решения",
+          closedOfTotal:(c,t)=>`${c} закрыто / ${t} всего`,
+          profRating:"Рейтинг", ratingLbl:"Рейтинг",
+          ratingHint:"Рейтинг снижается за проблемы, закрытые не в срок",
+          topRating:"ТОП-5 рейтинг", fullRanking:"Полный рейтинг", seeAll:"Все",
+          youLbl:"вы", downloadExcel:"Excel",
+          totalIssues:"Всего проблем", overallStatus:"Общее состояние",
+          closedPct:"закрыто", overdueLbl:"Просрочено",
+          deptRanking:"Рейтинг отделов", deptRankingSub:"По проценту решения",
+          recentAll:"Последние проблемы", noIssues:"Нет проблем",
+          openCount:(n)=>`${n} открытых`,
+          notifNewIssues:"Новые проблемы", markAllRead:"Отметить всё прочитанным",
+          deadlineNear:"Срок приближается", networkError:"Ошибка сети", errLabel:"Ошибка",
         },
         en: {
           roleLabel: { assembler:'Assembler', logistics:'Logistics', production:'Production', admin:'Admin' },
@@ -1288,6 +1737,66 @@
           quickAcceptBtn:"Accept", respDept:"Responsible", resolvedBy:"Resolved by",
           deptLogistics:"Logistics", deptProduction:"Production",
           quickCloseTitle:"Close Issue", qcLabel:"Action Plan",
+          auditSub:"Issue Management",
+          auditSt:{ open:'Open', processing:'Processing', pending_verification:'Pending Verification', closed:'Closed', overdue:'Overdue' },
+          auditLv:{ Low:'Low', Medium:'Medium', High:'High', Critical:'Critical' },
+          auditNoData:"No data", auditNoDataSub:"No data available, add some",
+          auditSearch:"Search", auditReset:"Clear",
+          auditSaved:"Audit issue added ✓", auditUpdated:"Saved ✓",
+          auditStatusOk:"Status updated ✓", auditClosed:"Closed ✓", auditDeleted:"Deleted",
+          auditConfirmDel:"Confirm deletion?",
+          auditFillAll:"Fill all * fields",
+          auditDeadlineErr:"Deadline cannot be in the past",
+          auditCorrectiveReq:"Enter corrective action",
+          auditCompleted:"Completed",
+          auditNextBtn:{ open:"Move to Processing →", processing:"Send for Verification →", pending_verification:"Close ✓" },
+          auditNextCls:{ open:"btn-warn", processing:"btn-warn", pending_verification:"btn-success" },
+          auditAddTitle:"New Audit Issue",
+          auditWorkshop:"Workshop", auditLine:"Line", auditStation:"Station",
+          auditQCode:"Question Code", auditCategory:"Problem Category", auditLevel:"Problem Level",
+          auditDiscDept:"Discovering Department", auditDesc:"Problem Detail Description",
+          auditResp:"Responsible Person", auditDeadline:"Target Date",
+          auditMedia:"Attachment (photo/video, optional)",
+          auditLvOpts:["Low","Medium","High","Critical"],
+          auditEditTitle:"Edit", auditProcessLabel:"Process", auditCorrLabel:"Corrective Action",
+          auditProgressPh:"Work completed...", auditCorrPh:"What was corrected...",
+          auditAttach:"Attachment", auditDelete:"Delete", auditAddedBy:"Added by",
+          auditFoundDept:"Discovering Dept", auditProbCat:"Problem Category", auditProbLvl:"Problem Level",
+          auditClosedBy:"Closed by",
+          checkNav:"Daily", checkTitle:"Daily Checklist",
+          checkStatus:"Daily checklist status", checkNok:"NOK items",
+          checkNoItems:"No checklist items added", checkManage:"Manage questions",
+          checkAddTitle:"Add new question", checkCat:"Category",
+          checkQ:"Question", checkSub:"Sub-label (optional)", checkOrd:"Order №",
+          checkAdd:"Add", checkAll:"All questions",
+          checkActive:"Active", checkInactive:"Inactive", checkSaved:"Question added ✓",
+          checkDeleted:"Deleted", checkConfirmDel:"Confirm deletion?",
+          checkAllDone:"All questions answered ✓",
+          greetNight:"Good night 🌙", greetMorning:"Good morning ☀️",
+          greetAfternoon:"Good afternoon 🌤", greetEvening:"Good evening 🌆",
+          statJami:"TOTAL", statOpen:"OPEN", statInprog:"IN PROG", statClosed:"CLOSED",
+          quickAdd:"Add\nIssue", quickAudit:"Process\nAudit",
+          quickCheck:"Daily\nChecklist", quickList:"All\nRecords",
+          deptStat:(tot,op,cl)=>`${tot} · ${op} open · ${cl} closed`,
+          profDept:"Technologies Department", profDeptShort:"Technologies",
+          profSettings:"Settings", profChangePass:"Change Password", profNotif:"Notifications",
+          profPersonal:"Personal Info", profUsernameLabel:"Username",
+          profPosition:"Position", profDeptLine:"Department / Line", profDeptLabel:"Department",
+          profCurrPass:"Current password", profConfirmPass:"Confirm new password",
+          profPassChanged:"Password changed successfully ✓",
+          profResolution:"Resolution Rate",
+          closedOfTotal:(c,t)=>`${c} closed / ${t} total`,
+          profRating:"Rating", ratingLbl:"Rating",
+          ratingHint:"Rating drops for issues closed after their deadline",
+          topRating:"TOP-5 Rating", fullRanking:"Full Ranking", seeAll:"See all",
+          youLbl:"you", downloadExcel:"Excel",
+          totalIssues:"Total Issues", overallStatus:"Overall Status",
+          closedPct:"closed", overdueLbl:"Overdue",
+          deptRanking:"Department Ranking", deptRankingSub:"By resolution rate",
+          recentAll:"Recent Issues", noIssues:"No issues",
+          openCount:(n)=>`${n} open`,
+          notifNewIssues:"New Issues", markAllRead:"Mark all as read",
+          deadlineNear:"Deadline Soon", networkError:"Network error", errLabel:"Error",
         },
       };
       let LANG = localStorage.getItem('lang') || 'uz';
@@ -1349,7 +1858,8 @@
       function back() {
         showNav(); closeNotifPanel(); closeLangPanel(); showScreen('s-main');
         if      (curTab === 'list')  renderList().then(initScrollHide);
-        else if (curTab === 'tasks') renderTasks().then(initScrollHide);
+        else if (curTab === 'tasks') renderAudit().then(initScrollHide);
+        else if (curTab === 'check') renderChecklist().then(initScrollHide);
         else                         renderHome().then(initScrollHide);
       }
 
@@ -1363,24 +1873,123 @@
           ME = d.user;
           $('m-name').textContent = ME.name;
           updateTopbarRole();
-          buildNav(); showScreen('s-main'); renderHome().then(initScrollHide); loadNotifications(); updateLangButtons();
+          buildNav(); showScreen('s-main'); loadNotifications(); updateLangButtons(); updateOfflineUI();
+          applyWatermark();
+          const qp = new URLSearchParams(window.location.search).get('open');
+          if (qp) {
+            history.replaceState({}, '', window.location.pathname);
+            const [qtype, qid] = qp.split('_');
+            if (qtype === 'record') { renderHome().then(initScrollHide); showDetail(parseInt(qid)); }
+            else if (qtype === 'audit') { curTab='tasks'; buildNav(); renderAudit().then(() => { initScrollHide(); openAuditView(parseInt(qid)); }); }
+            else renderHome().then(initScrollHide);
+          } else { renderHome().then(initScrollHide); }
         } catch (e) { $('l-err').textContent = t('serverErr') }
         finally { spin('login-spin', false); $('login-btn').disabled = false; }
       }
       $('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
 
-      async function doLogout() {
-        await fetch('/api/logout', { method: 'POST' });
-        if (chatSocket) { chatSocket.disconnect(); chatSocket = null; }
-        ME = null; curTab = 'home'; curFilter = 'all'; curRoom = 'umumiy'; onlineList = []; NOTIFS = [];
-        closeNotifPanel(); showNav(); showScreen('s-login');
+      function openQR(type, id, label) {
+        const url = window.location.origin + window.location.pathname + '?open=' + type + '_' + id;
+        $('qr-title').textContent = 'QR Kod — ' + label;
+        $('qr-label').textContent = url;
+        const modal = $('qr-modal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+        QRCode.toCanvas($('qr-canvas'), url, {
+          width: 220, margin: 2,
+          color: { dark: '#1A1A2E', light: '#FFFFFF' }
+        }, err => { if (err) console.error(err); });
+      }
+      function closeQR() {
+        const modal = $('qr-modal');
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 250);
+      }
+      function printQR() {
+        const canvas = $('qr-canvas');
+        const label  = $('qr-label').textContent;
+        const title  = $('qr-title').textContent;
+        const w = window.open('', '_blank');
+        w.document.write(`<html><head><title>${title}</title><style>
+          body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;background:#fff}
+          h3{font-size:16px;margin-bottom:12px;color:#1A1A2E}
+          p{font-size:10px;color:#666;margin-top:10px;word-break:break-all;max-width:240px;text-align:center}
+          img{border-radius:8px;border:1px solid #eee}
+        </style></head><body>
+          <h3>${title}</h3>
+          <img src="${canvas.toDataURL()}" width="220">
+          <p>${label}</p>
+        </body></html>`);
+        w.document.close();
+        w.print();
       }
 
+      function togglePwd(id, icon) {
+        const inp = $(id);
+        if (inp.type === 'password') { inp.type = 'text'; icon.classList.replace('ti-eye','ti-eye-off'); }
+        else { inp.type = 'password'; icon.classList.replace('ti-eye-off','ti-eye'); }
+      }
+
+      async function changePassword() {
+        const oldP = $('p-old').value.trim();
+        const newP = $('p-new').value.trim();
+        const conf = $('p-confirm').value.trim();
+        const err  = $('p-err');
+        if (!oldP || !newP || !conf) { err.textContent = 'Barcha maydonlarni kiriting'; return; }
+        if (newP.length < 4)         { err.textContent = 'Yangi parol kamida 4 ta belgi bo\'lishi kerak'; return; }
+        if (newP !== conf)            { err.textContent = 'Yangi parollar mos kelmaydi'; return; }
+        err.textContent = '';
+        const r = await api('/api/me/password', { method: 'POST', body: JSON.stringify({ oldPassword: oldP, newPassword: newP }) });
+        if (r?.ok) {
+          toast(t('profPassChanged'));
+          $('p-old').value = ''; $('p-new').value = ''; $('p-confirm').value = '';
+        } else { err.textContent = r?.error || 'Xato'; }
+      }
+
+      async function saveEmail() {
+        const email = ($('p-email') ? $('p-email').value.trim() : '');
+        const err = $('email-err');
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          if (err) err.textContent = 'Email formati noto\'g\'ri';
+          return;
+        }
+        if (err) err.textContent = '';
+        const r = await api('/api/me/email', { method: 'PATCH', body: JSON.stringify({ email: email || null }) });
+        if (r?.ok) {
+          if (ME) ME.email = email || null;
+          toast('Email saqlandi ✓');
+        } else {
+          if (err) err.textContent = r?.error || 'Xato';
+        }
+      }
+
+      function saveNotifPref(key, val) {
+        localStorage.setItem('notif_' + key, val ? 'on' : 'off');
+        toast(val ? 'Bildirishnoma yoqildi ✓' : 'Bildirishnoma o\'chirildi');
+      }
+
+      function doLogout() {
+        window.location.href = '/logout';
+      }
+
+      let INBOX = [];
+
       async function loadNotifications() {
-        const data = await api('/api/notifications');
-        if (!data) return;
-        NOTIFS = data;
-        $('notif-dot').style.display = NOTIFS.length ? 'block' : 'none';
+        const showNew = localStorage.getItem('notif_new') !== 'off';
+        const showDl  = localStorage.getItem('notif_dl')  !== 'off';
+        const [deadlineData, inboxData] = await Promise.all([
+          showDl  ? api('/api/notifications') : Promise.resolve([]),
+          showNew ? api('/api/inbox')         : Promise.resolve([]),
+        ]);
+        NOTIFS = deadlineData || [];
+        INBOX  = inboxData  || [];
+        const unread = INBOX.filter(n => !n.is_read).length;
+        const total  = unread + (showDl ? NOTIFS.length : 0);
+        const badge  = $('notif-badge');
+        if (badge) {
+          if (total > 0) { badge.style.display = 'flex'; badge.textContent = total > 9 ? '9+' : total; }
+          else badge.style.display = 'none';
+        }
       }
 
       function toggleNotifPanel() {
@@ -1391,25 +2000,47 @@
         else panel.classList.remove('show');
       }
 
+      async function markAllRead() {
+        await api('/api/inbox/read-all', { method: 'POST' });
+        INBOX.forEach(n => n.is_read = true);
+        const badge = $('notif-badge');
+        if (badge) badge.style.display = 'none';
+        renderNotifList();
+      }
+
       function renderNotifList() {
-        if (!NOTIFS.length) {
+        const unreadInbox = INBOX.filter(n => !n.is_read);
+        const hasDeadlines = NOTIFS.length > 0;
+        if (!unreadInbox.length && !hasDeadlines) {
           $('notif-list').innerHTML = `<div style="text-align:center;padding:16px;color:var(--txt3);font-size:13px">${t('notifEmpty')}</div>`;
           return;
         }
-        $('notif-list').innerHTML = `
-          <div style="font-size:10px;font-weight:700;color:var(--txt2);padding:8px 14px 4px;letter-spacing:.4px;text-transform:uppercase">
-            ${t('notifTitle')} — ${NOTIFS.length}
-          </div>
-          ${NOTIFS.map(r => `
+        let html = '';
+        if (unreadInbox.length) {
+          html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px">
+            <span style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.4px;text-transform:uppercase">${t('notifNewIssues')} — ${unreadInbox.length}</span>
+            <button onclick="markAllRead()" style="font-size:10px;color:var(--txt3);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">${t('markAllRead')}</button>
+          </div>`;
+          html += unreadInbox.map(n => `
+            <div class="notif-item" style="border-left:3px solid var(--blue);background:var(--blue-lt)" onclick="api('/api/inbox/${n.id}/read',{method:'POST'});toggleNotifPanel();${n.record_id?`showDetail(${n.record_id})`:''}">
+              <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:3px">${n.title}</div>
+              <div style="font-size:11px;color:var(--txt2);line-height:1.4">${n.body.substring(0,70)}${n.body.length>70?'...':''}</div>
+              <div style="font-size:10px;color:var(--txt3);margin-top:3px">${new Date(n.created_at).toLocaleString('uz-UZ',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+            </div>`).join('');
+        }
+        if (hasDeadlines) {
+          html += `<div style="font-size:10px;font-weight:700;color:var(--amber);padding:8px 14px 4px;letter-spacing:.4px;text-transform:uppercase;border-top:1px solid var(--border)">⏰ ${t('deadlineNear')} — ${NOTIFS.length}</div>`;
+          html += NOTIFS.map(r => `
             <div class="notif-item" onclick="toggleNotifPanel();showDetail(${r.id})">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
                 <span style="font-size:13px;font-weight:600;color:var(--txt)">${r.line} · ${r.station}</span>
                 <span class="badge ${r.isOverdue ? 'b-overdue' : 'b-risky'}">${r.isOverdue ? `❗ ${t('overdue_badge')}` : r.daysLeft === 0 ? `⚠ ${t('today')}` : `⚠ ${r.daysLeft} ${t('daysLeft')}`}</span>
               </div>
-              <div style="font-size:11px;color:var(--txt2);line-height:1.4">${r.problem.replace(/\n/g,' ').substring(0,55)}${r.problem.length>55?'...':''}</div>
+              <div style="font-size:11px;color:var(--txt2);line-height:1.4">${r.problem.replace(/\n/g,' ').substring(0,55)}...</div>
               <div style="font-size:10px;color:var(--txt3);margin-top:2px;font-family:'DM Mono',monospace">Muddat: ${r.deadline}</div>
-            </div>
-          `).join('')}`;
+            </div>`).join('');
+        }
+        $('notif-list').innerHTML = html;
       }
 
       function renderStaticLabels() {
@@ -1451,6 +2082,16 @@
           set(`${p}-r-a`, rl.assembler); set(`${p}-r-l`, rl.logistics);
           set(`${p}-r-p`, rl.production); set(`${p}-r-ad`, rl.admin);
         });
+        // audit add modal labels
+        set('aa-modal-title', t('auditAddTitle'));
+        set('aa-lbl-ws',   t('auditWorkshop')+' *'); set('aa-lbl-ln', t('auditLine')+' *');
+        set('aa-lbl-st',   t('auditStation')+' *');  set('aa-lbl-qc', t('auditQCode')+' *');
+        set('aa-lbl-cat',  t('auditCategory')+' *'); set('aa-lbl-lv', t('auditLevel')+' *');
+        set('aa-lbl-dd',   t('auditDiscDept')+' *'); set('aa-lbl-desc', t('auditDesc')+' *');
+        set('aa-lbl-resp', t('auditResp')+' *');     set('aa-lbl-dl', t('auditDeadline')+' *');
+        set('aa-lbl-media', t('auditMedia'));         set('aa-save-txt', t('save'));
+        const lvOpts = t('auditLvOpts');
+        ['aa-opt-low','aa-opt-mid','aa-opt-high','aa-opt-crit'].forEach((id,i)=>set(id, lvOpts[i]));
         // lang buttons active state
         updateLangButtons();
         // login page lang buttons
@@ -1462,11 +2103,16 @@
       function updateTopbarRole() {
         const el = $('m-role');
         if (!el || !ME) return;
-        el.textContent = t('roleLabel')[ME.role] || ME.roleLabel;
-        el.className = 'role-pill ' + RPILL[ME.role];
-        el.style.cssText = 'font-size:11px;padding:3px 10px';
+        el.textContent = t('profDeptShort');
+        el.className = '';
+        el.style.cssText = 'font-size:10px;color:#90CAF9;font-weight:600';
         const wel = $('m-welcome');
         if (wel) wel.textContent = t('welcome');
+        const pos = $('m-position');
+        if (pos) {
+          const parts = [ME.position, ME.line].filter(Boolean);
+          pos.textContent = parts.join(' · ');
+        }
       }
 
       function updateLangButtons() {
@@ -1485,23 +2131,21 @@
         buildNav();
         if      (curTab === 'home')   renderHome().then(initScrollHide);
         else if (curTab === 'list')   renderList().then(initScrollHide);
-        else if (curTab === 'tasks')  renderTasks().then(initScrollHide);
-        else if (curTab === 'profil') renderProfil().then(initScrollHide);
+        else if (curTab === 'tasks')  renderAudit().then(initScrollHide);
+        else if (curTab === 'check')  renderChecklist().then(initScrollHide);
+        else if (curTab === 'profil') renderProfil();
         else if (curTab === 'users')  renderUsers().then(initScrollHide);
       }
 
       function buildNav() {
         const isAdmin = ME.role === 'admin';
-        const canAdd = ME.role === 'assembler' || isAdmin;
-        const hasTasks = ME.role === 'logistics' || ME.role === 'production';
         const nav = t('nav');
         const tabs = [
-          { id: 'home',  icon: 'ti-layout-dashboard', label: nav.home },
-          { id: 'list',  icon: 'ti-list',              label: nav.list },
-          ...(canAdd    ? [{ id: 'add',   icon: 'ti-circle-plus',      label: nav.add }]        : []),
-          ...(hasTasks  ? [{ id: 'tasks', icon: 'ti-clipboard-check',  label: t('tasks') }]     : []),
-          ...(isAdmin   ? [{ id: 'users', icon: 'ti-users',            label: nav.users }]      : []),
-          { id: 'chat',   icon: 'ti-messages',                        label: 'Chat' },
+          { id: 'home',   icon: 'ti-layout-dashboard', label: nav.home },
+          { id: 'list',   icon: 'ti-list',              label: nav.list },
+          { id: 'tasks',  icon: 'ti-clipboard-check',   label: t('tasks') },
+          { id: 'check',  icon: 'ti-circle-check',      label: t('checkNav') },
+          ...(isAdmin ? [{ id: 'users', icon: 'ti-users', label: nav.users }] : []),
           { id: 'profil', icon: 'ti-user', label: nav.profil },
         ];
         $('bottomnav').innerHTML = tabs.map(tab => `
@@ -1516,10 +2160,10 @@
         showScreen('s-main');
         if      (tab === 'home')   renderHome().then(initScrollHide);
         else if (tab === 'list')   renderList().then(initScrollHide);
-        else if (tab === 'tasks')  renderTasks().then(initScrollHide);
-        else if (tab === 'profil') renderProfil().then(initScrollHide);
+        else if (tab === 'tasks')  renderAudit().then(initScrollHide);
+        else if (tab === 'check')  renderChecklist().then(initScrollHide);
+        else if (tab === 'profil') renderProfil();
         else if (tab === 'users')  renderUsers().then(initScrollHide);
-        else if (tab === 'chat')   renderChat();
       }
 
       async function api(url, opts = {}) {
@@ -1527,90 +2171,457 @@
           const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
           if (r.status === 401) { showScreen('s-login'); return null }
           return r.json();
-        } catch (e) { toast('Tarmoq xatosi', false); return null }
+        } catch (e) { toast(t('networkError'), false); return null }
       }
 
       async function renderHome() {
-        const [stats, recs] = await Promise.all([api('/api/stats'), api('/api/records')]);
+        // Dashboard: scope=all — barcha liniyalar muammolari ko'rsatiladi
+        const _today = new Date().toISOString().slice(0,10);
+        const [stats, recs, chk, ranking] = await Promise.all([
+          api('/api/stats?scope=all'),
+          api('/api/records?scope=all'),
+          api('/api/checklist?date=' + _today),
+          api('/api/ranking')
+        ]);
         if (!stats || !recs) return;
-        const st = t('stats'); const rm = t('roleMsg');
-        const byLineHtml = Object.entries(stats.byLine || {}).sort((a,b)=>b[1]-a[1]).map(([line, cnt]) => {
-          const pct = stats.total ? Math.round(cnt / stats.total * 100) : 0;
-          return `<div class="breakdown-row">
-            <div style="font-size:12px;font-weight:600;color:var(--txt);width:58px">${line}</div>
-            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct}%"></div></div>
-            <div style="font-size:12px;font-weight:700;color:var(--txt);font-family:'DM Mono',monospace;width:24px;text-align:right">${cnt}</div>
+        const rm = t('roleMsg');
+
+        // ── Donut chart (SVG) ───────────────────────────────────
+        const tot = stats.total || 1;
+        const R = 40, C = 2 * Math.PI * R;
+        function arc(val, offset, color) {
+          const len = (val / tot) * C;
+          return `<circle cx="50" cy="50" r="${R}" fill="none" stroke="${color}" stroke-width="13"
+            stroke-dasharray="${len.toFixed(1)} ${(C-len).toFixed(1)}"
+            stroke-dashoffset="${(-offset * C / tot + C/4).toFixed(1)}" stroke-linecap="butt"/>`;
+        }
+        const oArc = arc(stats.open,       0,                     '#F59E0B');
+        const iArc = arc(stats.inprogress, stats.open,            '#3B82F6');
+        const cArc = arc(stats.closed,     stats.open+(stats.inprogress||0), '#22C55E');
+        const pct  = stats.total ? Math.round(stats.closed / stats.total * 100) : 0;
+
+        // ── Department ranking ──────────────────────────────────
+        const esc = s => s.replace(/'/g, "\\'");
+        const depts = Object.entries(stats.byLineDetail || {})
+          .sort((a,b) => b[1].total - a[1].total);
+        const rankHtml = depts.map(([line, d], i) => {
+          const clPct   = d.total ? Math.round(d.closed / d.total * 100) : 0;
+          const opPct   = d.total ? Math.round((d.open + (d.inprogress||0)) / d.total * 100) : 0;
+          const clr     = lc(line), lt = ll(line), ic = licon(line);
+          const medal   = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+          const rColor  = clPct >= 70 ? '#22C55E' : clPct >= 40 ? '#F59E0B' : '#EF4444';
+          return `<div onclick="viewFilter('${esc(line)}')" style="cursor:pointer;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+              <div style="width:28px;height:28px;border-radius:8px;background:${lt};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="ti ${ic}" style="font-size:14px;color:${clr}"></i>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:12px">${medal}</span>
+                  <span style="font-size:13px;font-weight:700;color:var(--txt)">${line}</span>
+                </div>
+                <div style="font-size:11px;color:var(--txt3)">${t('deptStat')(d.total, d.open||0, d.closed||0)}</div>
+              </div>
+              <div style="font-size:15px;font-weight:700;color:${rColor};font-family:'DM Mono',monospace">${clPct}%</div>
+            </div>
+            <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden;display:flex">
+              <div style="width:${clPct}%;background:#22C55E;border-radius:4px 0 0 4px;transition:width .4s"></div>
+              <div style="width:${d.total?Math.round((d.inprogress||0)/d.total*100):0}%;background:#3B82F6"></div>
+              <div style="width:${opPct - (d.total?Math.round((d.inprogress||0)/d.total*100):0)}%;background:#F59E0B;border-radius:0 4px 4px 0"></div>
+            </div>
           </div>`;
         }).join('');
+
+        // ── Top-5 user rating ───────────────────────────────────
+        const top5 = (ranking || []).slice(0, 5);
+        const rl2 = t('roleLabel');
+        const top5Html = top5.map(u => {
+          const medal  = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : `${u.rank}.`;
+          const rColor = u.rating >= 70 ? '#22C55E' : u.rating >= 40 ? '#F59E0B' : '#EF4444';
+          const isMe   = ME && u.username === ME.username;
+          return `<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);${isMe?'background:var(--bg);border-radius:8px;padding-left:6px;padding-right:6px':''}">
+            <div style="width:24px;text-align:center;font-size:13px;flex-shrink:0">${medal}</div>
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${u.full_name.slice(0,2).toUpperCase()}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.full_name}${isMe?' ('+t('youLbl')+')':''}</div>
+              <div style="font-size:10.5px;color:var(--txt3)">${u.line || rl2[u.role] || u.role || ''}</div>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:${rColor};font-family:'DM Mono',monospace">${u.rating}</div>
+          </div>`;
+        }).join('');
+
+        // ── Recent by line — separate cards ────────────────────
+        // Sub-lines → parent group (nesting)
+        const _lineParent = {
+          // Painting sub-stations
+          "INSPECTION":              "Painting",
+          "TOP-COAT":                "Painting",
+          "PRIMER SANDING":          "Painting",
+          "PRIMER-COAT":             "Painting",
+          "UNDERBODY COATING":       "Painting",
+          "SEALING":                 "Painting",
+          "ED-SANDING":              "Painting",
+          "PRE-TREATMENT ELECTR":    "Painting",
+          // Legacy Painting names
+          "Sealing liniyasi":        "Painting",
+          "Sealing":                 "Painting",
+          "Bo'yoqlash":              "Painting",
+          // GA sub-stations
+          "CHASSIS":                 "General Assembly",
+          "TRIM":                    "General Assembly",
+          "FINAL LINE":              "General Assembly",
+          "SUB LINE":                "General Assembly",
+          // Legacy GA names
+          "Trim":                    "General Assembly",
+          "GA":                      "General Assembly",
+          // Legacy Welding names
+          "Svarka":                  "Welding",
+          "Payvandlash":             "Welding",
+        };
+        const _lineLabel = {};
+        function _groupLine(line)   { return _lineParent[line] || line; }
+        function _labelLine(line)   { return _lineLabel[line]  || line; }
+
+        const _rev = [...recs].reverse();
+        const _lineOrder = [], _byLine = {};
+        for (const r of _rev) {
+          const grp = _groupLine(r.line);
+          if (!_byLine[grp]) { _byLine[grp] = []; _lineOrder.push(grp); }
+          _byLine[grp].push(r);
+        }
+
+        function _miniIssue(r, clr) {
+          const stColor = r.status==='open'?'#E65100':r.status==='inprogress'?'#1565C0':'#2E7D32';
+          const stBg    = r.status==='open'?'#FFF3E0':r.status==='inprogress'?'#E3F2FD':'#E8F5E9';
+          const dl      = r.deadline && r.status!=='closed'
+            ? '<div style="font-size:10px;color:'+(r.isOverdue?'var(--red)':r.isRisky?'var(--amber)':'var(--txt3)')+';margin-top:3px;font-family:\'DM Mono\',monospace">📅 '+r.deadline+'</div>'
+            : '';
+          const prob = r.problem.replace(/\n/g,' ').substring(0,65)+(r.problem.length>65?'…':'');
+          const _subClr = lc(r.line) !== '#455A64' ? lc(r.line) : '#E65100';
+          const subTag = _lineParent[r.line]
+            ? '<span style="font-size:10px;background:'+_subClr+'22;color:'+_subClr+';border-radius:20px;padding:2px 7px;font-weight:600">'+r.line+'</span>'
+            : '';
+          return '<div onclick="showDetail('+r.id+')" style="background:var(--bg);border:1px solid var(--border);border-left:3px solid '+clr+';border-radius:10px;padding:10px 12px;cursor:pointer;margin-bottom:7px">'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">'
+            +'<span style="font-size:10px;background:'+stBg+';color:'+stColor+';border-radius:20px;padding:2px 8px;font-weight:700">'+(t('status')[r.status]||r.status)+'</span>'
+            +'<span class="type-pill '+(TC[r.type]||'r-ad')+'" style="font-size:10px">'+r.type+'</span>'
+            +subTag
+            +'<span style="font-size:10px;color:var(--txt3);font-family:\'DM Mono\',monospace;margin-left:auto">'+r.station+'</span>'
+            +'</div>'
+            +'<div style="font-size:12px;color:var(--txt2);line-height:1.45">'+prob+'</div>'
+            +dl+'</div>';
+        }
+
+        let recentHtml = '';
+        for (let li = 0; li < _lineOrder.length; li++) {
+          const line  = _lineOrder[li];
+          const clr   = lc(line), ic = licon(line);
+          const total = recs.filter(r => _groupLine(r.line)===line).length;
+          const opCt  = recs.filter(r => _groupLine(r.line)===line && r.status!=='closed').length;
+          const clPct = total ? Math.round((total-opCt)/total*100) : 0;
+          let mc = '';
+          const top2 = _byLine[line].slice(0,2);
+          for (let mi=0;mi<top2.length;mi++) mc += _miniIssue(top2[mi], clr);
+          const badgeBg  = opCt > 0 ? 'rgba(255,255,255,0.18)' : 'rgba(129,199,132,0.35)';
+          const badgeTxt = opCt > 0 ? opCt + ' ' + t('statOpen') : '✓';
+          // Sub-lines that belong to this group
+          const _subs = Object.keys(_lineParent).filter(k => _lineParent[k] === line);
+          const _subsHtml = _subs.length
+            ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">'
+              + _subs.map(s => '<span style="background:rgba(255,255,255,0.18);color:rgba(255,255,255,0.92);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600">+ '+s+'</span>').join('')
+              + '</div>'
+            : '';
+          recentHtml += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:12px">'
+            +'<div style="background:'+clr+';padding:13px 14px 12px;display:flex;align-items:center;gap:10px">'
+            +'<div style="width:38px;height:38px;border-radius:13px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+            +'<i class="ti '+ic+'" style="font-size:20px;color:#fff"></i></div>'
+            +'<div style="flex:1;min-width:0">'
+            +'<div style="font-size:14px;font-weight:800;color:#fff">'+_labelLine(line)+'</div>'
+            +'<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px">'+total+' · '+t('openCount')(opCt)+'</div>'
+            +_subsHtml
+            +'</div>'
+            +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">'
+            +'<div style="font-size:16px;font-weight:800;color:#fff">'+clPct+'%</div>'
+            +'<span style="background:'+badgeBg+';color:#fff;border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700">'+badgeTxt+'</span>'
+            +'</div></div>'
+            +'<div style="padding:10px 12px 4px">'+mc
+            +'<div style="text-align:right;padding:2px 0 8px">'
+            +'<span onclick="viewFilter(\''+line.replace(/'/g,"\\'")+'\',event)" style="font-size:11px;color:'+clr+';font-weight:700;cursor:pointer">'+t('viewAll')+' →</span>'
+            +'</div></div></div>';
+        }
+
+        // ── Kunlik tekshiruv summary card ──────────────────────
+        const _chkPct  = chk && chk.total>0 ? Math.round(chk.answered/chk.total*100) : 0;
+        const _chkNok  = chk && chk.nok>0 ? '<div style="font-size:11px;color:#FFCDD2;margin-bottom:8px">'+chk.nok+' '+t('checkNok')+'</div>' : '';
+        const _chkDone = chk && _chkPct===100 ? '<div style="font-size:11px;color:#C8E6C9;margin-bottom:8px">'+t('checkAllDone')+'</div>' : '';
+        const checkCard = '<div style="background:linear-gradient(135deg,#0D1B3E,#1565C0);border-radius:18px;overflow:hidden;margin-bottom:12px;color:#fff">'
+          +'<div style="padding:13px 14px 12px;display:flex;align-items:center;gap:10px">'
+          +'<div style="width:38px;height:38px;border-radius:13px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+          +'<i class="ti ti-circle-check" style="font-size:20px;color:#fff"></i></div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:14px;font-weight:800">'+t('checkTitle')+'</div>'
+          +'<div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px">'+_today+'</div>'
+          +'</div>'
+          +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">'
+          +'<div style="font-size:16px;font-weight:800">'+(chk?chk.answered:0)+'/'+(chk?chk.total:0)+'</div>'
+          +'<div style="font-size:10px;color:rgba(255,255,255,0.65)">'+_chkPct+'%</div>'
+          +'</div></div>'
+          +'<div style="padding:0 14px 14px">'
+          +'<div style="background:rgba(255,255,255,0.15);border-radius:8px;height:6px;overflow:hidden;margin-bottom:10px">'
+          +'<div style="width:'+_chkPct+'%;height:100%;background:#81C784;border-radius:8px"></div></div>'
+          +_chkNok+_chkDone
+          +'<button onclick="goTab(\'check\')" style="width:100%;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.28);border-radius:10px;padding:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">'
+          +t('checkNav')+' — '+t('viewAll')+' →</button>'
+          +'</div></div>';
+
+        // ── Hero prep ────────────────────────────────────────────
+        const _initials = (ME.name||'U').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+        const _hr = new Date().getHours();
+        const _greet = _hr < 5 ? t('greetNight') : _hr < 12 ? t('greetMorning') : _hr < 17 ? t('greetAfternoon') : t('greetEvening');
+        const _dp = new Date().toISOString().slice(0,10).split('-');
+        const _dstr = _dp[2] + '.' + _dp[1] + '.' + _dp[0];
+
         $('main-content').innerHTML = `
-    <div class="hero">
-      <div><div class="hero-num">${stats.total}</div><div class="hero-lbl">${rm[ME.role] || ''}</div></div>
-      <div class="hero-div"></div>
-      <div style="text-align:center"><div class="hero-num" style="color:#FFD54F">${stats.open}</div><div class="hero-lbl" style="color:#FFCC80">${t('status').open}</div></div>
-      <div class="hero-div"></div>
-      <div style="text-align:center"><div class="hero-num" style="color:#90CAF9">${stats.inprogress || 0}</div><div class="hero-lbl" style="color:#90CAF9">${t('status').inprogress}</div></div>
-      <div class="hero-div"></div>
-      <div style="text-align:right"><div class="hero-num" style="color:#81C784">${stats.closed}</div><div class="hero-lbl" style="color:#A5D6A7">${t('status').closed}</div></div>
+
+    <!-- ═══ HERO BANNER ═══ -->
+    <div style="background:linear-gradient(140deg,#0A1628 0%,#0D2050 45%,#1565C0 100%);border-radius:22px;padding:20px 18px 0 18px;margin-bottom:14px;color:#fff;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none"></div>
+      <div style="position:absolute;top:60px;right:10px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.04);pointer-events:none"></div>
+      <div style="position:absolute;bottom:-30px;left:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.03);pointer-events:none"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-size:11px;font-weight:600;opacity:0.6;letter-spacing:0.3px">${_greet}</div>
+        <div style="font-size:11px;opacity:0.5;font-family:'DM Mono',monospace">${_dstr}</div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="width:58px;height:58px;border-radius:18px;background:rgba(255,255,255,0.14);border:2px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:900;letter-spacing:-2px;flex-shrink:0">
+          ${_initials}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:19px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ME.name}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
+            <span style="font-size:11px;background:rgba(255,255,255,0.15);border-radius:20px;padding:2px 9px;font-family:'DM Mono',monospace;letter-spacing:0.3px">@${ME.username}</span>
+            <span style="font-size:11px;opacity:0.6">·</span>
+            <span style="font-size:11px;opacity:0.65">${ME.line || t('profDeptShort')}</span>
+          </div>
+          ${ME.email ? `<div style="display:flex;align-items:center;gap:4px;margin-top:4px"><i class="ti ti-mail" style="font-size:11px;opacity:0.55"></i><span style="font-size:11px;opacity:0.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ME.email}</span></div>` : ''}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding-bottom:18px">
+        <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:13px;padding:11px 4px">
+          <i class="ti ti-clipboard-list" style="font-size:16px;opacity:0.7"></i>
+          <div style="font-size:19px;font-weight:800;margin-top:2px">${stats.total}</div>
+          <div style="font-size:9px;opacity:0.6;margin-top:1px;font-weight:700;letter-spacing:0.5px">${t('statJami')}</div>
+        </div>
+        <div style="text-align:center;background:rgba(245,158,11,0.18);border-radius:13px;padding:11px 4px">
+          <i class="ti ti-alert-circle" style="font-size:16px;color:#FFD54F;opacity:0.85"></i>
+          <div style="font-size:19px;font-weight:800;color:#FFD54F;margin-top:2px">${stats.open}</div>
+          <div style="font-size:9px;color:#FFD54F;opacity:0.75;margin-top:1px;font-weight:700;letter-spacing:0.5px">${t('statOpen')}</div>
+        </div>
+        <div style="text-align:center;background:rgba(59,130,246,0.18);border-radius:13px;padding:11px 4px">
+          <i class="ti ti-refresh" style="font-size:16px;color:#90CAF9;opacity:0.85"></i>
+          <div style="font-size:19px;font-weight:800;color:#90CAF9;margin-top:2px">${stats.inprogress||0}</div>
+          <div style="font-size:9px;color:#90CAF9;opacity:0.75;margin-top:1px;font-weight:700;letter-spacing:0.5px">${t('statInprog')}</div>
+        </div>
+        <div style="text-align:center;background:rgba(34,197,94,0.18);border-radius:13px;padding:11px 4px">
+          <i class="ti ti-circle-check" style="font-size:16px;color:#81C784;opacity:0.85"></i>
+          <div style="font-size:19px;font-weight:800;color:#81C784;margin-top:2px">${stats.closed}</div>
+          <div style="font-size:9px;color:#81C784;opacity:0.75;margin-top:1px;font-weight:700;letter-spacing:0.5px">${t('statClosed')}</div>
+        </div>
+      </div>
     </div>
-    ${stats.overdue > 0 ? `<div class="alert-box" style="background:var(--red-lt);border-color:#EF9A9A;cursor:pointer" onclick="viewFilter('overdue')">
-      <i class="ti ti-alarm" style="font-size:20px;color:var(--red);flex-shrink:0"></i>
-      <div><div style="font-size:12px;font-weight:700;color:var(--red)">❗ ${stats.overdue} ${t('overdueAlert')}</div>
-      <div style="font-size:11px;color:var(--red);opacity:.8;margin-top:1px">${t('overdueSub')}</div></div>
-    </div>` : ''}
-    ${stats.risky > 0 ? `<div class="alert-box" style="cursor:pointer" onclick="viewFilter('risky')">
-      <i class="ti ti-alert-triangle" style="font-size:20px;color:var(--amber);flex-shrink:0"></i>
-      <div><div style="font-size:12px;font-weight:600;color:var(--amber)">⚠ ${stats.risky} ${t('riskyAlert')}</div>
-      <div style="font-size:11px;color:#E65100;margin-top:1px">${t('riskySub')}</div></div>
-    </div>` : ''}
-    <div class="stat-grid" style="margin-bottom:12px">
-      <div class="stat-box" style="cursor:pointer" onclick="viewFilter('overdue')">
-        <div class="stat-num" style="color:var(--red)">${stats.overdue || 0}</div>
-        <div class="stat-lbl">${st.overdue}</div>
+
+    <!-- ═══ QUICK ACTIONS ═══ -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+      <div onclick="goTab('add')" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 6px 11px;text-align:center;cursor:pointer">
+        <div style="width:38px;height:38px;border-radius:12px;background:#F3E5F5;margin:0 auto 7px;display:flex;align-items:center;justify-content:center">
+          <i class="ti ti-plus" style="font-size:20px;color:#7B1FA2"></i>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--txt);line-height:1.3">${t('quickAdd').replace('\n','<br>')}</div>
       </div>
-      <div class="stat-box" style="cursor:pointer" onclick="viewFilter('risky')">
-        <div class="stat-num" style="color:var(--amber)">${stats.risky || 0}</div>
-        <div class="stat-lbl">${st.risky}</div>
+      <div onclick="goTab('tasks')" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 6px 11px;text-align:center;cursor:pointer">
+        <div style="width:38px;height:38px;border-radius:12px;background:#E3F2FD;margin:0 auto 7px;display:flex;align-items:center;justify-content:center">
+          <i class="ti ti-clipboard-check" style="font-size:20px;color:#1565C0"></i>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--txt);line-height:1.3">${t('quickAudit').replace('\n','<br>')}</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-num" style="color:var(--purple)">${stats.recurring || 0}</div>
-        <div class="stat-lbl">${st.recurring}</div>
+      <div onclick="goTab('check')" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 6px 11px;text-align:center;cursor:pointer">
+        <div style="width:38px;height:38px;border-radius:12px;background:#E8F5E9;margin:0 auto 7px;display:flex;align-items:center;justify-content:center">
+          <i class="ti ti-circle-check" style="font-size:20px;color:#2E7D32"></i>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--txt);line-height:1.3">${t('quickCheck').replace('\n','<br>')}</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-num" style="color:var(--green)">${stats.closed || 0}</div>
-        <div class="stat-lbl">${st.closed}</div>
+      <div onclick="goTab('list')" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 6px 11px;text-align:center;cursor:pointer">
+        <div style="width:38px;height:38px;border-radius:12px;background:#FFF8E1;margin:0 auto 7px;display:flex;align-items:center;justify-content:center">
+          <i class="ti ti-list-details" style="font-size:20px;color:#E65100"></i>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--txt);line-height:1.3">${t('quickList').replace('\n','<br>')}</div>
       </div>
     </div>
-    ${byLineHtml ? `<div class="det-block" style="margin-bottom:12px">
-      <div class="dl" style="margin-bottom:9px">${t('byLine')}</div>
-      ${byLineHtml}
-    </div>` : ''}
-    <div style="font-size:11px;font-weight:700;color:var(--txt2);margin-bottom:9px;letter-spacing:.3px;text-transform:uppercase">${t('recent')}</div>
-    ${[...recs].reverse().slice(0, 4).map(r => card(r)).join('')}
-    <div style="text-align:center;padding:6px 0 2px"><span style="font-size:13px;color:var(--blue);font-weight:600;cursor:pointer" onclick="goTab('list')">${t('viewAll')}</span></div>`;
+
+    <!-- ═══ ALERTS ═══ -->
+    ${stats.overdue>0 ? '<div class="alert-box" style="background:var(--red-lt);border-color:#EF9A9A;cursor:pointer;margin-bottom:8px" onclick="viewFilter(\'overdue\')"><i class="ti ti-alarm" style="font-size:20px;color:var(--red);flex-shrink:0"></i><div><div style="font-size:12px;font-weight:700;color:var(--red)">❗ ' + stats.overdue + ' ' + t('overdueAlert') + '</div><div style="font-size:11px;color:var(--red);opacity:.8;margin-top:1px">' + t('overdueSub') + '</div></div></div>' : ''}
+    ${stats.risky>0 ? '<div class="alert-box" style="cursor:pointer;margin-bottom:8px" onclick="viewFilter(\'risky\')"><i class="ti ti-alert-triangle" style="font-size:20px;color:var(--amber);flex-shrink:0"></i><div><div style="font-size:12px;font-weight:600;color:var(--amber)">⚠ ' + stats.risky + ' ' + t('riskyAlert') + '</div><div style="font-size:11px;color:#E65100;margin-top:1px">' + t('riskySub') + '</div></div></div>' : ''}
+
+    <!-- ═══ OVERALL STATUS ═══ -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px">
+        <div style="width:32px;height:32px;border-radius:10px;background:#E3F2FD;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="ti ti-chart-donut" style="font-size:17px;color:#1565C0"></i>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:var(--txt)">${t('overallStatus')}</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--txt3)">${t('closedPct')}: <span style="font-weight:700;color:#22C55E">${pct}%</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px">
+        <div style="position:relative;width:100px;height:100px;flex-shrink:0">
+          <svg viewBox="0 0 100 100" width="100" height="100" style="transform:rotate(-90deg)">
+            <circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--border)" stroke-width="12"/>
+            ${stats.total>0?cArc:''}${stats.total>0?iArc:''}${stats.total>0?oArc:''}
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-size:17px;font-weight:800;color:var(--txt);font-family:'DM Mono',monospace">${pct}%</div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:#E8F5E9;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-circle-check" style="font-size:14px;color:#22C55E"></i></div>
+            <div style="flex:1;font-size:12px;color:var(--txt2)">${t('status').closed}</div>
+            <div style="font-size:13px;font-weight:800;color:#22C55E;font-family:'DM Mono',monospace">${stats.closed}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:#E3F2FD;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-refresh" style="font-size:14px;color:#3B82F6"></i></div>
+            <div style="flex:1;font-size:12px;color:var(--txt2)">${t('status').inprogress}</div>
+            <div style="font-size:13px;font-weight:800;color:#3B82F6;font-family:'DM Mono',monospace">${stats.inprogress||0}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:#FFF8E1;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-alert-circle" style="font-size:14px;color:#F59E0B"></i></div>
+            <div style="flex:1;font-size:12px;color:var(--txt2)">${t('status').open}</div>
+            <div style="font-size:13px;font-weight:800;color:#F59E0B;font-family:'DM Mono',monospace">${stats.open}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:#FFEBEE;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-alarm" style="font-size:14px;color:var(--red)"></i></div>
+            <div style="flex:1;font-size:12px;color:var(--txt2)">${t('overdueLbl')}</div>
+            <div style="font-size:13px;font-weight:800;color:var(--red);font-family:'DM Mono',monospace">${stats.overdue||0}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TOP-5 USER RATING ═══ -->
+    ${top5.length ? '<div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:32px;height:32px;border-radius:10px;background:#FFF8E1;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-star" style="font-size:17px;color:#E65100"></i></div><div style="font-size:13px;font-weight:700;color:var(--txt)">' + t('topRating') + '</div><div style="margin-left:auto;font-size:10px;color:var(--txt3);cursor:pointer" onclick="goTab(\'profil\')">' + t('seeAll') + ' →</div></div>' + top5Html + '</div>' : ''}
+
+    <!-- ═══ DEPT RANKING ═══ -->
+    ${ME && ME.role === 'admin' && depts.length ? '<div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:12px"><div style="width:32px;height:32px;border-radius:10px;background:#FFF8E1;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-trophy" style="font-size:17px;color:#E65100"></i></div><div style="font-size:13px;font-weight:700;color:var(--txt)">' + t('deptRanking') + '</div><div style="margin-left:auto;font-size:10px;color:var(--txt3)">' + t('deptRankingSub') + '</div></div>' + rankHtml + '</div>' : ''}
+
+    <!-- ═══ RECENT BY LINE ═══ -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="width:32px;height:32px;border-radius:10px;background:#EDE7F6;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-layout-cards" style="font-size:17px;color:#6A1B9A"></i>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--txt)">${t('recentAll')}</div>
+    </div>
+    ${checkCard}
+    ${recentHtml || '<div style="text-align:center;padding:30px;color:var(--txt3);font-size:13px">' + t('noIssues') + '</div>'}
+    <div style="height:8px"></div>`;
       }
 
       let curSearch = '';
+      const collapsedLines = new Set();
+
+      const LINE_C = {
+        // ── 3 asosiy liniya ───────────────────────────────────
+        'Welding':            ['#B71C1C','#FFEBEE','ti-flame'],
+        'Painting':           ['#1B5E20','#E8F5E9','ti-brush'],
+        'General Assembly':   ['#0D47A1','#E3F2FD','ti-car'],
+        // ── Eski / alias nomlar (bir xil rang) ────────────────
+        'Svarka':             ['#B71C1C','#FFEBEE','ti-flame'],
+        'Payvandlash':        ['#B71C1C','#FFEBEE','ti-flame'],
+        "Bo'yoqlash":         ['#1B5E20','#E8F5E9','ti-brush'],
+        'Sealing liniyasi':   ['#1B5E20','#E8F5E9','ti-droplet'],
+        'Sealing':            ['#1B5E20','#E8F5E9','ti-droplet'],
+        'GA':                 ['#0D47A1','#E3F2FD','ti-car'],
+        'Trim':               ['#0D47A1','#E3F2FD','ti-car'],
+        'Chassis':            ['#0D47A1','#E3F2FD','ti-car'],
+        'Final':              ['#0D47A1','#E3F2FD','ti-flag'],
+      };
+      function lc(line)   { return (LINE_C[line]||['#455A64','#ECEFF1','ti-list'])[0]; }
+      function ll(line)   { return (LINE_C[line]||['#455A64','#ECEFF1','ti-list'])[1]; }
+      function licon(line){ return (LINE_C[line]||['#455A64','#ECEFF1','ti-list'])[2]; }
+      function lsid(line) { return line.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+      function toggleLineSection(sid) {
+        const el = document.getElementById('ls-' + sid);
+        if (!el) return;
+        const line = el.dataset.line;
+        if (collapsedLines.has(line)) collapsedLines.delete(line);
+        else collapsedLines.add(line);
+        el.classList.toggle('collapsed', collapsedLines.has(line));
+      }
+
       async function renderList(f) {
         if (f !== undefined) curFilter = f;
         const url = curSearch ? `/api/records?search=${encodeURIComponent(curSearch)}` : '/api/records';
         const recs = await api(url); if (!recs) return;
+
+        const knownFilters = ['all','open','inprogress','closed','risky','overdue','recurring'];
+        const isLineFilter = !knownFilters.includes(curFilter);
+
         let filtered = recs;
-        if (curFilter === 'open')       filtered = recs.filter(x => x.status === 'open');
+        if (curFilter === 'open')            filtered = recs.filter(x => x.status === 'open');
         else if (curFilter === 'inprogress') filtered = recs.filter(x => x.status === 'inprogress');
         else if (curFilter === 'closed')     filtered = recs.filter(x => x.status === 'closed');
         else if (curFilter === 'risky')      filtered = recs.filter(x => x.isRisky);
         else if (curFilter === 'overdue')    filtered = recs.filter(x => x.isOverdue);
         else if (curFilter === 'recurring')  filtered = recs.filter(x => x.isRecurring);
-        else if (['Trim','Chassis','Final'].includes(curFilter)) filtered = recs.filter(x => x.line === curFilter);
+        else if (isLineFilter)               filtered = recs.filter(x => x.line === curFilter);
+
+        const allLines = [...new Set(recs.map(r => r.line).filter(Boolean))].sort();
         const fl = t('filters');
-        const filterLabels = { all:`${fl.all} (${recs.length})`, open:fl.open, inprogress:fl.inprogress, closed:fl.closed,
-          risky:fl.risky, overdue:fl.overdue, recurring:fl.recurring, Trim:'Trim', Chassis:'Chassis', Final:'Final' };
+        const filterLabels = { all:`${fl.all} (${recs.length})`, open:fl.open, inprogress:fl.inprogress, closed:fl.closed, risky:fl.risky, overdue:fl.overdue, recurring:fl.recurring };
+
+        const statusChipsHtml = ['all','open','inprogress','closed','risky','overdue'].map(x =>
+          `<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${filterLabels[x]||x}</div>`
+        ).join('');
+
+        const lineChipsHtml = allLines.map(line => {
+          const attr = line.replace(/"/g,'&quot;');
+          const active = curFilter === line;
+          return `<div class="chip${active?' on':''}" data-lf="${attr}" onclick="renderList(this.dataset.lf)" style="${active?'':`border-color:${lc(line)}20`}">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${lc(line)};margin-right:5px;vertical-align:middle"></span>${line}
+          </div>`;
+        }).join('');
+
+        let contentHtml;
+        if (isLineFilter || curSearch) {
+          contentHtml = `<div class="cards-grid" style="padding:0 14px">${[...filtered].reverse().map(r => card(r, ME.role==='admin', true)).join('')}</div>`;
+        } else {
+          const groups = {};
+          for (const r of [...filtered].reverse()) {
+            const key = r.line || '—';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(r);
+          }
+          contentHtml = Object.entries(groups).map(([line, records]) => {
+            const sid = lsid(line);
+            const isCollapsed = collapsedLines.has(line);
+            const color = lc(line), bg = ll(line), icon = licon(line);
+            return `
+            <div class="line-section${isCollapsed?' collapsed':''}" id="ls-${sid}" data-line="${line.replace(/"/g,'&quot;')}">
+              <div class="line-hdr" onclick="toggleLineSection('${sid}')" style="border-left-color:${color};background:${bg}">
+                <i class="ti ${icon} lh-icon" style="color:${color}"></i>
+                <span class="lh-name" style="color:${color}">${line}</span>
+                <span class="lh-count" style="background:${color}22;color:${color}">${records.length} ta</span>
+                <i class="ti ti-chevron-down lh-chev" style="color:${color}"></i>
+              </div>
+              <div class="line-cards cards-grid">${records.map(r => card(r, ME.role==='admin', true)).join('')}</div>
+            </div>`;
+          }).join('');
+        }
+
         $('main-content').innerHTML = `
-    <div class="filter-row">
-      ${['all','open','inprogress','closed','risky','overdue','Trim','Chassis','Final'].map(x =>
-        `<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${filterLabels[x]||x}</div>`
-      ).join('')}
-    </div>
+    <div class="filter-row">${statusChipsHtml}${lineChipsHtml}</div>
     <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center">
       <div style="flex:1;position:relative">
         <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txt3)"></i>
@@ -1619,9 +2630,8 @@
     </div>
     <div class="export-row">
       <div class="export-btn excel" onclick="doExport('excel')"><i class="ti ti-file-spreadsheet" style="font-size:15px"></i>${t('exportExcel')}</div>
-      <div class="export-btn word" onclick="doExport('word')"><i class="ti ti-file-word" style="font-size:15px"></i>${t('exportWord')}</div>
     </div>
-    ${[...filtered].reverse().map(r => card(r)).join('')}
+    ${contentHtml}
     ${!filtered.length ? `<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px">${t('noRecords')}</div>` : ''}`;
         initScrollHide();
       }
@@ -1632,46 +2642,76 @@
         a.href = url; a.download = ''; a.click();
       }
 
-      function card(r) {
-        const borderClass = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card' : r.status === 'open' ? ' open-card' : '';
-        const statusBadge = r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed';
-        const st = t('status'); const statusLabel = st[r.status] || r.status;
-        const dlBadge = r.deadline && r.status !== 'closed'
-          ? `<span class="badge ${r.isOverdue?'b-overdue':r.isRisky?'b-risky':'b-inprogress'}" style="margin-left:4px">${r.isOverdue?`❗ ${t('overdue_badge')}`:r.daysLeft===0?`⚠ ${t('today')}`:`⏰ ${r.daysLeft} ${t('daysLeft')}`}</span>`
-          : '';
-        const recurringBadge = r.isRecurring ? `<span style="font-size:9px;font-weight:700;color:var(--purple);background:var(--purple-lt);border-radius:20px;padding:2px 7px;margin-left:4px">${t('recurring_badge')}</span>` : '';
-        return `<div class="card${borderClass}" onclick="showDetail(${r.id})">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <span style="font-size:13px;font-weight:600;color:var(--txt)">${r.line} · ${r.station}</span>
-        <span class="type-pill ${TC[r.type]||'r-ad'}">${r.type}</span>
-        ${recurringBadge}
-      </div>
-      <div style="display:flex;align-items:center;gap:4px">
-        ${dlBadge}
-        <span class="badge ${statusBadge}">${statusLabel}</span>
-      </div>
-    </div>
-    <div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:6px">${r.problem.replace(/\n/g,' ').substring(0,65)}${r.problem.length>65?'...':''}</div>
-    ${r.imgBefore||r.imgAfter?`<div style="display:flex;gap:5px;margin:5px 0">
-      ${r.imgBefore?`<img src="${r.imgBefore}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid var(--border)" onclick="event.stopPropagation();openLB('${r.imgBefore}')" alt="before">`:''}
-      ${r.imgAfter?`<img src="${r.imgAfter}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid var(--border)" onclick="event.stopPropagation();openLB('${r.imgAfter}')" alt="after">`:''}
-    </div>`:''}
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-      <div style="display:flex;align-items:center;gap:4px"><i class="ti ti-user" style="font-size:12px;color:var(--txt3)"></i><span style="font-size:11px;color:var(--txt3)">${r.auditor}</span></div>
-      <div style="display:flex;align-items:center;gap:6px">
-        ${r.deadline?`<span style="font-size:11px;color:${r.isOverdue?'var(--red)':r.isRisky?'var(--amber)':'var(--txt3)'};font-family:'DM Mono',monospace">📅 ${r.deadline}</span>`:''}
-        <span style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${r.date}</span>
-      </div>
-    </div>
-  </div>`;
+      async function deleteRecord(id, event) {
+        event.stopPropagation();
+        if (!confirm(t('deleteConfirm') || "Bu yozuvni o'chirishni tasdiqlaysizmi?")) return;
+        const res = await api(`/api/records/${id}`, { method: 'DELETE' });
+        if (res && res.ok) renderHome();
+        else alert(res?.error || "O'chirishda xatolik");
+      }
+
+      function card(r, showDelete = false, hideLineName = false) {
+        const borderCls = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card'
+                        : r.status === 'inprogress' ? ' prog-card'
+                        : r.status === 'closed'     ? ' closed-card' : ' open-card';
+        const st   = t('status');
+        const sCls = r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed';
+        const sLbl = st[r.status] || r.status;
+        const deptBadge = r.dept === 'logistics'
+          ? `<span class="c-dept-l">⚙ Logistika</span>`
+          : `<span class="c-dept-p">🏭 Ishlab chiqarish</span>`;
+        const recurBadge = r.isRecurring
+          ? `<span style="font-size:9px;font-weight:700;color:var(--purple);background:var(--purple-lt);border-radius:20px;padding:2px 6px">↺</span>` : '';
+        const delBtn = showDelete
+          ? `<button onclick="deleteRecord(${r.id},event)" style="background:none;border:none;cursor:pointer;padding:2px 5px;color:var(--red);opacity:.7;font-size:14px;line-height:1;border-radius:6px" title="O'chirish"><i class="ti ti-trash"></i></button>` : '';
+        const titleText = hideLineName ? r.station : `${r.line} · ${r.station}`;
+        let dlHtml = '';
+        if (r.deadline) {
+          if (r.status === 'closed') dlHtml = `<span class="c-dl-ok">✓ ${r.deadline}</span>`;
+          else if (r.isOverdue)      dlHtml = `<span class="c-dl-late">❗ Kechikdi · ${r.deadline}</span>`;
+          else if (r.daysLeft === 0) dlHtml = `<span class="c-dl-risk">⚠ Bugun · ${r.deadline}</span>`;
+          else if (r.isRisky)        dlHtml = `<span class="c-dl-risk">⏰ ${r.daysLeft} kun · ${r.deadline}</span>`;
+          else                       dlHtml = `<span class="c-dl-ok">📅 ${r.deadline}</span>`;
+        } else {
+          dlHtml = `<span style="font-size:11px;color:var(--txt3);opacity:.45">Muddat belgilanmagan</span>`;
+        }
+        const allMedia = (r.mediaFiles&&r.mediaFiles.length) ? r.mediaFiles
+          : [...(r.imgBefore?[{url:r.imgBefore,type:'image'}]:[]),...(r.imgAfter?[{url:r.imgAfter,type:'image'}]:[])];
+        const imgs = allMedia.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+          ${allMedia.slice(0,4).map(m=>m.type==='video'
+            ?`<div style="width:44px;height:44px;border-radius:7px;background:#111;border:1px solid var(--border);display:flex;align-items:center;justify-content:center"><i class="ti ti-player-play" style="font-size:18px;color:#fff"></i></div>`
+            :`<img src="${m.url}" style="width:44px;height:44px;border-radius:7px;object-fit:cover;border:1px solid var(--border)" onclick="event.stopPropagation();openLB('${m.url}')" alt="">`)
+          .join('')}${allMedia.length>4?`<div style="width:44px;height:44px;border-radius:7px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--txt2)">+${allMedia.length-4}</div>`:''}
+        </div>` : '';
+        return `<div class="card${borderCls}" onclick="showDetail(${r.id})">
+          <div class="c-head">
+            <span class="badge ${sCls}">${sLbl}</span>
+            <span class="type-pill ${TC[r.type]||'r-ad'}">${r.type}</span>
+            ${recurBadge}
+            <span style="flex:1"></span>
+            ${deptBadge}
+            ${delBtn}
+          </div>
+          <div class="c-body">
+            <div class="c-title">${titleText}</div>
+            <div class="c-prob">${r.problem.replace(/\n/g,' ').substring(0,90)}${r.problem.length>90?'…':''}</div>
+            ${imgs}
+          </div>
+          <div class="c-foot">
+            <div>${dlHtml}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;color:var(--txt3)">👤 ${r.auditor}</span>
+              <span style="font-size:10px;color:var(--txt3);font-family:'DM Mono',monospace">${r.date}</span>
+            </div>
+          </div>
+        </div>`;
       }
 
       async function showDetail(id) {
         const r = await api(`/api/records/${id}`); if (!r || r.error) return;
         const me = await api('/api/me'); if (!me) return;
         const rc = me.roleCfg;
-        const canCloseThis = rc.canClose && (me.role !== 'logistics' || r.dept === 'logistics');
+        const canCloseThis = rc.canClose;
         const db = $('d-badge');
         const st = t('status');
         db.textContent = st[r.status] || r.status;
@@ -1684,7 +2724,7 @@
       <div><div class="dl">${t('fieldStation')}</div><div class="dv">${r.station}</div></div>
       <div><div class="dl">${t('fieldType')}</div><div class="dv"><span class="type-pill ${TC[r.type] || 'r-ad'}">${r.type}</span></div></div>
       <div><div class="dl">${t('fieldAuditor')}</div><div class="dv">${r.auditor}</div></div>
-      <div style="grid-column:span 2"><div class="dl">${t('respDept')}</div><div class="dv" style="display:flex;align-items:center;gap:6px"><span class="role-pill ${r.dept==='logistics'?'r-l':'r-p'}" style="font-size:10px">${r.dept==='logistics'?t('deptLogistics'):t('deptProduction')}</span>${r.resolvedBy?`<span style="font-size:11px;color:var(--txt3)">${t('resolvedBy')}: <b>${r.resolvedBy}</b></span>`:''}</div></div>
+      <div style="grid-column:span 2"><div class="dl">${t('respDept')}</div><div class="dv" style="display:flex;align-items:center;gap:6px"><span class="role-pill r-ad" style="font-size:10px">${r.dept||'—'}</span>${r.resolvedBy?`<span style="font-size:11px;color:var(--txt3)">${t('resolvedBy')}: <b>${r.resolvedBy}</b></span>`:''}</div></div>
     </div></div>
     <div class="det-block" style="${r.isOverdue?'border-left:3px solid var(--red)':r.isRisky?'border-left:3px solid var(--amber)':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
@@ -1700,15 +2740,27 @@
     </div>
     <div class="det-block"><div class="dl" style="margin-bottom:5px">${t('fieldProblem')}</div><div class="dv" style="line-height:1.6;white-space:pre-line">${r.problem}</div></div>
     <div class="det-block"><div class="dl" style="margin-bottom:5px">${t('fieldAction')}</div><div class="dv" style="line-height:1.6">${r.action}</div></div>
-    ${r.imgBefore || r.imgAfter ? `<div class="det-block"><div class="dl" style="margin-bottom:8px">${t('photos')}</div>
-      <div style="display:flex;gap:12px">
-        ${r.imgBefore ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">${t('before').toUpperCase()}</div><img src="${r.imgBefore}" onclick="openLB('${r.imgBefore}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
-        ${r.imgAfter ? `<div style="text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:600">${t('after').toUpperCase()}</div><img src="${r.imgAfter}" onclick="openLB('${r.imgAfter}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)"></div>` : ''}
-      </div></div>`: ''}
+    ${(()=>{
+      const dm = (r.mediaFiles&&r.mediaFiles.length) ? r.mediaFiles
+        : [...(r.imgBefore?[{url:r.imgBefore,type:'image',label:'before'}]:[]),...(r.imgAfter?[{url:r.imgAfter,type:'image',label:'after'}]:[])];
+      if(!dm.length) return '';
+      const bef = dm.filter(m=>m.label==='before'), aft = dm.filter(m=>m.label==='after'), oth = dm.filter(m=>!m.label||(!bef.includes(m)&&!aft.includes(m)));
+      const row = (items,lbl) => items.length ? `<div style="margin-bottom:10px"><div style="font-size:10px;color:var(--txt3);font-weight:700;margin-bottom:6px;text-transform:uppercase">${lbl}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">${items.map(m=>m.type==='video'
+          ?`<video src="${m.url}" controls style="width:120px;height:80px;border-radius:9px;object-fit:cover;border:1px solid var(--border)"></video>`
+          :`<img src="${m.url}" onclick="openLB('${m.url}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)">`
+        ).join('')}</div></div>` : '';
+      return `<div class="det-block"><div class="dl" style="margin-bottom:10px">${t('photos')}</div>
+        ${row(bef,t('before'))}${row(aft,t('after'))}${row(oth,'')}
+      </div>`;
+    })()}
     ${rc.canAction && r.status !== 'closed' ? `
     <div class="det-block">
       <div class="dl" style="margin-bottom:7px">${t('fieldActionReq')} <span style="color:var(--red)">*</span></div>
       <textarea class="inp" id="upd-action" style="margin-bottom:8px" placeholder="${t('actionRequired')}">${r.action === '—' ? '' : r.action}</textarea>
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:5px">Rasm / video (ixtiyoriy)</div>
+      <div class="media-grid" id="close-grid"></div>
+      <input type="file" id="close-file" accept="image/*,video/*" multiple style="display:none" onchange="addCloseMedia(this)">
       <div id="upd-err" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:6px"></div>
       <div style="display:flex;gap:7px">
         ${r.status === 'open' ? `<button class="btn btn-warn" style="padding:10px" onclick="setStatus(${r.id},'inprogress')"><i class="ti ti-loader" style="font-size:15px"></i>${t('setInProgress')}</button>` : ''}
@@ -1722,8 +2774,13 @@
       </button>
     </div>` : ''}`: ''}
     ${r.status === 'closed' ? `<div style="background:var(--green-lt);border-radius:var(--r-sm);border:1px solid #A5D6A7;padding:13px;display:flex;align-items:center;gap:10px"><i class="ti ti-circle-check" style="font-size:24px;color:var(--green)"></i><div><div style="font-size:13px;font-weight:600;color:var(--green)">${t('closedMsg')}</div><div style="font-size:11px;color:var(--green);opacity:.8;margin-top:1px">${t('closedSub')}</div>${r.resolvedBy?`<div style="font-size:11px;color:var(--txt2);margin-top:4px">${t('resolvedBy')}: <b>${r.resolvedBy}</b></div>`:''}</div></div>` : ''}
+    <button class="btn btn-sm" style="width:100%;margin-top:8px;padding:10px;border:1.5px dashed var(--border)" onclick="openQR('record',${r.id},'${r.line} · ${r.station}')">
+      <i class="ti ti-qrcode" style="font-size:16px"></i> QR Kod
+    </button>
     <div style="height:20px"></div>`;
         showScreen('s-detail');
+        _closeMf = [];
+        renderCloseGrid();
       }
 
       async function setStatus(id, st) {
@@ -1735,6 +2792,11 @@
         if ($('upd-err')) $('upd-err').textContent = '';
         const r = await api(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify({ status: st, action }) });
         if (r && !r.error) {
+          if (_closeMf.length) {
+            const fd = new FormData();
+            _closeMf.forEach(f => fd.append('mediaClose', f));
+            await fetch(`/api/records/${id}/media`, { method: 'POST', body: fd });
+          }
           toast(st === 'closed' ? t('closedSet') : t('inProgressSet'));
           showDetail(id);
           loadNotifications();
@@ -1759,31 +2821,139 @@
       }
 
       async function renderProfil() {
-        const [stats, me] = await Promise.all([api('/api/stats'), api('/api/me')]); if (!stats || !me) return;
-        const pct = stats.total ? Math.round(stats.closed / stats.total * 100) : 0;
-        const st = t('stats');
+        const [stats, me, ranking] = await Promise.all([api('/api/stats'), api('/api/me'), api('/api/ranking')]); if (!stats || !me) return;
+        const pct      = stats.total ? Math.round(stats.closed / stats.total * 100) : 0;
+        const pctColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--red)';
+        const pctGrad  = pct >= 70 ? '#2E7D32,#4CAF50' : pct >= 40 ? '#E65100,#FF9800' : '#C62828,#EF5350';
+        const pctLabel = pct >= 70 ? "Yaxshi ✓" : pct >= 40 ? "O'rtacha" : "Past ⚠";
+        const rating     = me.rating ?? 100;
+        const ratingColor = rating >= 70 ? 'var(--green)' : rating >= 40 ? 'var(--amber)' : 'var(--red)';
+        const ratingGrad  = rating >= 70 ? '#2E7D32,#4CAF50' : rating >= 40 ? '#E65100,#FF9800' : '#C62828,#EF5350';
+        const rl3 = t('roleLabel');
+        const fullRankingHtml = (ranking || []).map(u => {
+          const medal  = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : `${u.rank}.`;
+          const rColor = u.rating >= 70 ? 'var(--green)' : u.rating >= 40 ? 'var(--amber)' : 'var(--red)';
+          const isMe   = u.username === me.username;
+          return `<div style="display:flex;align-items:center;gap:9px;padding:8px 6px;border-bottom:1px solid var(--border);${isMe?'background:rgba(21,101,192,.08);border-radius:8px':''}">
+            <div style="width:22px;text-align:center;font-size:12px;flex-shrink:0">${medal}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:${isMe?700:600};color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.full_name}${isMe?' ('+t('youLbl')+')':''}</div>
+              <div style="font-size:10px;color:var(--txt3)">${u.line || rl3[u.role] || u.role || ''}</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:${rColor};font-family:'DM Mono',monospace">${u.rating}</div>
+          </div>`;
+        }).join('');
+        const notifNew = localStorage.getItem('notif_new') !== 'off';
+        const notifDl  = localStorage.getItem('notif_dl')  !== 'off';
         $('main-content').innerHTML = `
-    <div style="background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border-radius:var(--r);padding:18px;margin-bottom:14px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(21,101,192,.25)">
-      <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff">${me.name.slice(0, 2).toUpperCase()}</div>
-      <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:#fff">${me.name}</div><div style="font-size:11px;color:#90CAF9;margin-top:2px">${me.line}</div></div>
-      <span class="role-pill ${RPILL[me.role]}" style="font-size:12px;padding:4px 14px">${t('roleLabel')[me.role] || me.roleLabel}</span>
+    <div style="background:linear-gradient(135deg,#1565C0,#1976D2);border-radius:var(--r);padding:24px 18px;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(21,101,192,.3)">
+      <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff">${me.name.slice(0,2).toUpperCase()}</div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:700;color:#fff">${me.name}</div>
+        <div style="font-size:12px;color:#90CAF9;margin-top:4px">${[me.position, me.line].filter(Boolean).join(' · ')}</div>
+      </div>
+      <span style="font-size:12px;color:#90CAF9;font-weight:600">${t('profDept')}</span>
     </div>
-    <div class="stat-grid">
+
+    <div class="stat-grid" style="margin-bottom:14px">
       <div class="stat-box"><div class="stat-num">${stats.total}</div><div class="stat-lbl">${t('visibleRecords')}</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${stats.open}</div><div class="stat-lbl">${t('openIssues')}</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${stats.inprogress || 0}</div><div class="stat-lbl">${t('status').inprogress}</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${stats.closed}</div><div class="stat-lbl">${st.closed}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${stats.inprogress||0}</div><div class="stat-lbl">${t('status').inprogress}</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${stats.closed}</div><div class="stat-lbl">${t('stats').closed}</div></div>
     </div>
-    <div style="background:var(--surface);border-radius:var(--r-sm);border:1px solid var(--border);padding:12px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--txt2);font-weight:600">${t('resolutionRate')}</span><span style="font-size:12px;font-weight:700;color:var(--blue);font-family:'DM Mono',monospace">${pct}%</span></div>
-      <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid));border-radius:4px"></div></div>
+
+    <div class="det-block" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--txt)"><i class="ti ti-chart-pie" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:${pctColor}"></i>${t('profResolution')}</div>
+        <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:${pctColor}">${pct}%</div>
+      </div>
+      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;margin-bottom:7px">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,${pctGrad});border-radius:5px;transition:width .5s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <div style="font-size:11px;color:var(--txt3)">${t('closedOfTotal')(stats.closed,stats.total)}</div>
+        <div style="font-size:11px;font-weight:700;color:${pctColor}">${pctLabel}</div>
+      </div>
     </div>
-    <div class="menu-wrap" style="margin-bottom:12px">
-      <div class="menu-row"><div class="menu-icon" style="background:var(--blue-lt)"><i class="ti ti-user" style="font-size:17px;color:var(--blue)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">${me.name}</div><div style="font-size:11px;color:var(--txt3)">${me.username} · ${me.line}</div></div></div>
-      <div class="menu-row"><div class="menu-icon" style="background:var(--purple-lt)"><i class="ti ti-shield" style="font-size:17px;color:var(--purple)"></i></div><div style="flex:1"><div style="font-size:13px;font-weight:500">${t('role')}</div><div style="font-size:11px;color:var(--txt3)">${t('roleLabel')[me.role] || me.roleLabel}</div></div></div>
+
+    <div class="det-block" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--txt)"><i class="ti ti-star" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:${ratingColor}"></i>${t('profRating')}</div>
+        <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:${ratingColor}">${rating}</div>
+      </div>
+      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;margin-bottom:7px">
+        <div style="width:${rating}%;height:100%;background:linear-gradient(90deg,${ratingGrad});border-radius:5px;transition:width .5s ease"></div>
+      </div>
+      <div style="font-size:11px;color:var(--txt3)">${t('ratingHint')}</div>
     </div>
+
+    <div class="det-block" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--txt)"><i class="ti ti-list-numbers" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:var(--blue)"></i>${t('fullRanking')}</div>
+        <button class="btn btn-sm" onclick="window.open('/api/ranking/export?lang='+LANG,'_blank')" style="border:1px solid var(--border);background:var(--bg);color:var(--txt2);padding:5px 10px;font-size:11px"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> ${t('downloadExcel')}</button>
+      </div>
+      ${fullRankingHtml || `<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">${t('noIssues')}</div>`}
+    </div>
+
+    <div class="det-block" style="margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:12px"><i class="ti ti-user" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:var(--blue)"></i>${t('profPersonal')}</div>
+      <div class="prof-row"><div class="prof-lbl">${t('fullName')}</div><div class="prof-val">${me.name}</div></div>
+      <div class="prof-row"><div class="prof-lbl">${t('profUsernameLabel')}</div><div class="prof-val" style="font-family:'DM Mono',monospace">${me.username}</div></div>
+      ${me.position ? `<div class="prof-row"><div class="prof-lbl">${t('profPosition')}</div><div class="prof-val">${me.position}</div></div>` : ''}
+      <div class="prof-row"><div class="prof-lbl">${t('profDeptLine')}</div><div class="prof-val">${me.line||'—'}</div></div>
+      <div class="prof-row" style="border:none"><div class="prof-lbl">${t('profDeptLabel')}</div><div class="prof-val">${t('profDeptShort')}</div></div>
+
+      <div style="height:1px;background:var(--border);margin:14px 0"></div>
+      <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-mail" style="font-size:14px;color:var(--blue)"></i> Korporativ email
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="inp" id="p-email" type="email" placeholder="ism@byd.com" value="${me.email||''}" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="saveEmail()" style="white-space:nowrap"><i class="ti ti-check" style="font-size:14px"></i> Saqlash</button>
+      </div>
+      <div id="email-err" style="font-size:12px;color:var(--red);min-height:14px;margin-top:4px"></div>
+    </div>
+
+    <div class="det-block" style="margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:16px"><i class="ti ti-settings" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:var(--txt2)"></i>${t('profSettings')}</div>
+
+      <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-lock" style="font-size:14px"></i> ${t('profChangePass')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:6px">
+        <div style="position:relative">
+          <input class="inp" id="p-old"     type="password" placeholder="${t('profCurrPass')}" style="padding-right:40px">
+          <i class="ti ti-eye" onclick="togglePwd('p-old',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--txt3);cursor:pointer"></i>
+        </div>
+        <div style="position:relative">
+          <input class="inp" id="p-new"     type="password" placeholder="${t('newPassword')}" style="padding-right:40px">
+          <i class="ti ti-eye" onclick="togglePwd('p-new',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--txt3);cursor:pointer"></i>
+        </div>
+        <div style="position:relative">
+          <input class="inp" id="p-confirm" type="password" placeholder="${t('profConfirmPass')}" style="padding-right:40px">
+          <i class="ti ti-eye" onclick="togglePwd('p-confirm',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--txt3);cursor:pointer"></i>
+        </div>
+        <div id="p-err" style="font-size:12px;color:var(--red);min-height:14px"></div>
+        <button class="btn btn-primary btn-sm" onclick="changePassword()"><i class="ti ti-check" style="font-size:14px"></i> ${t('save')}</button>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:14px 0"></div>
+
+      <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-bell" style="font-size:14px"></i> ${t('profNotif')}
+      </div>
+      <div class="prof-row">
+        <div><div style="font-size:13px;color:var(--txt)">Yangi muammolar</div><div style="font-size:11px;color:var(--txt3)">Yangi muammo qo'shilganda xabar</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="notif-new" onchange="saveNotifPref('new',this.checked)" ${notifNew?'checked':''}><span class="toggle-slider"></span></label>
+      </div>
+      <div class="prof-row" style="border:none">
+        <div><div style="font-size:13px;color:var(--txt)">Muddat ogohlantirishlari</div><div style="font-size:11px;color:var(--txt3)">Muddati yaqin va o'tgan muammolar</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="notif-dl" onchange="saveNotifPref('dl',this.checked)" ${notifDl?'checked':''}><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
     <button class="btn btn-danger" onclick="doLogout()"><i class="ti ti-logout" style="font-size:17px"></i>${t('logout')}</button>
-    <div style="height:20px"></div>`;
+    <div style="height:24px"></div>`;
       }
 
       async function renderUsers() {
@@ -1801,10 +2971,12 @@
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;color:var(--txt)">${u.full_name}</div>
             <div style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${u.username} · ${u.line || '—'}</div>
+            ${u.email ? `<div style="font-size:10px;color:var(--blue);margin-top:1px"><i class="ti ti-mail" style="font-size:10px"></i> ${u.email}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
+            <span title="${t('ratingLbl')}" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${(u.rating??100)>=70?'var(--green)':(u.rating??100)>=40?'var(--amber)':'var(--red)'}"><i class="ti ti-star" style="font-size:11px;vertical-align:-1px"></i> ${u.rating??100}</span>
             <span class="role-pill ${RPILL[u.role]}">${rl[u.role] || u.role}</span>
-            <button onclick="openEditModal(${u.id},'${u.username}','${u.full_name}','${u.role}','${u.line||''}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-edit" style="font-size:16px;color:var(--blue)"></i></button>
+            <button onclick="openEditModal(${u.id},'${u.username}','${u.full_name}','${u.role}','${u.line||''}','${u.email||''}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-edit" style="font-size:16px;color:var(--blue)"></i></button>
             <button onclick="deleteUser(${u.id},'${u.username}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-trash" style="font-size:16px;color:var(--txt3)"></i></button>
           </div>
         </div>`).join('')}
@@ -1812,96 +2984,522 @@
     <div style="height:20px"></div>`;
       }
 
-      // ── Tasks (Vazifalarim) ────────────────────────────────────
-      async function renderTasks() {
-        const recs = await api('/api/records'); if (!recs) return;
-        const open  = recs.filter(r => r.status === 'open');
-        const inprog = recs.filter(r => r.status === 'inprogress');
+      // ── Process Audit Module ───────────────────────────────────
+      const AUDIT_ST_CLS = { open:'ab-open', processing:'ab-processing', pending_verification:'ab-pending', closed:'ab-closed', overdue:'ab-overdue' };
+      const AUDIT_LV_CLS = { Low:'ab-lv-low', Medium:'ab-lv-medium', High:'ab-lv-high', Critical:'ab-lv-critical' };
+      const auditStLbl = () => t('auditSt');
+      const auditLvLbl = () => t('auditLv');
+      let _auditState = { page:1, workshop:'', line:'', station:'', total:0, limit:20 };
+      let _auditViewId = null;
+      let _auditAddMf = [];
 
-        const secHtml = (title, icon, items, action) => {
-          if (!items.length) return '';
-          return `<div class="sec-lbl" style="margin-bottom:8px">
-            <i class="ti ${icon}" style="font-size:13px"></i>${title} (${items.length})
-          </div>
-          ${items.map(r => taskCard(r, action)).join('')}`;
-        };
+      async function renderAudit() {
+        const { page, workshop, line, station, limit } = _auditState;
+        const qs = new URLSearchParams({ page, limit });
+        if (workshop) qs.set('workshop', workshop);
+        if (line)     qs.set('line', line);
+        if (station)  qs.set('station', station);
+        const data = await api('/api/audit?' + qs.toString()); if (!data) return;
+        _auditState.total = data.total;
+        const totalPages = Math.ceil(data.total / limit) || 1;
+        const isAdmin = ME?.role === 'admin';
+
+        const cardsHtml = data.rows.length ? data.rows.map((r, i) => `
+          <div class="card" onclick="openAuditView(${r.id})" style="cursor:pointer;margin-bottom:10px;padding:12px 14px">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+              <span style="font-size:11px;font-weight:700;color:var(--txt3);font-family:'DM Mono',monospace">#${(page-1)*limit+i+1}</span>
+              <span style="font-size:12px;font-weight:700;color:var(--txt);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.workshop} · ${r.lineBody} · ${r.station}</span>
+              <span class="badge ${AUDIT_ST_CLS[r.status]||'ab-open'}" style="flex-shrink:0">${auditStLbl()[r.status]||r.status}</span>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+              ${r.questionCode?`<span style="font-size:10px;background:var(--border);border-radius:6px;padding:2px 7px;color:var(--txt2);font-family:'DM Mono',monospace">${r.questionCode}</span>`:''}
+              ${r.problemCategory?`<span style="font-size:10px;background:var(--border);border-radius:6px;padding:2px 7px;color:var(--txt2)">${r.problemCategory}</span>`:''}
+              <span class="badge ${AUDIT_LV_CLS[r.problemLevel]||'ab-lv-medium'}" style="font-size:10px">${auditLvLbl()[r.problemLevel]||r.problemLevel}</span>
+            </div>
+            <div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:7px">${r.description.substring(0,90)}${r.description.length>90?'…':''}</div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--txt3)">
+              <span><i class="ti ti-user" style="font-size:11px;vertical-align:-1px"></i> ${r.responsiblePerson||'—'}</span>
+              <span style="color:${r.status==='overdue'?'var(--red)':'var(--txt3)'}"><i class="ti ti-calendar" style="font-size:11px;vertical-align:-1px"></i> ${r.targetDate||'—'}</span>
+            </div>
+          </div>`).join('') : `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
+            <div style="width:64px;height:64px;background:var(--blue-lt);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+              <i class="ti ti-clipboard-list" style="font-size:32px;color:var(--blue)"></i>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:var(--txt);margin-bottom:6px">${t('auditNoData')}</div>
+            <div style="font-size:12px;color:var(--txt3)">${t('auditNoDataSub')}</div>
+          </div>`;
+
+        const paginHtml = totalPages > 1 ? `
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 0">
+            <button class="btn btn-sm" style="padding:7px 16px" onclick="auditPageGo(${page-1})" ${page<=1?'disabled':''}>‹</button>
+            <span style="font-size:12px;color:var(--txt2);font-family:'DM Mono',monospace">${page} / ${totalPages} · ${data.total}</span>
+            <button class="btn btn-sm" style="padding:7px 16px" onclick="auditPageGo(${page+1})" ${page>=totalPages?'disabled':''}>›</button>
+          </div>` : `<div style="text-align:center;font-size:11px;color:var(--txt3);padding:8px 0">${data.total}</div>`;
+
+        const exportUrl = `/api/audit/export?workshop=${encodeURIComponent(workshop)}&line=${encodeURIComponent(line)}&station=${encodeURIComponent(station)}`;
 
         $('main-content').innerHTML = `
-          ${secHtml(t('taskSectionNew'),        'ti-inbox',      open,   'accept')}
-          ${secHtml(t('taskSectionInProgress'), 'ti-loader',     inprog, 'close')}
-          ${!open.length && !inprog.length ? `
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
-              <div style="width:64px;height:64px;background:var(--green-lt);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
-                <i class="ti ti-circle-check" style="font-size:32px;color:var(--green)"></i>
-              </div>
-              <div style="font-size:15px;font-weight:700;color:var(--txt);margin-bottom:5px">${t('tasksDone')}</div>
-              <div style="font-size:12px;color:var(--txt3)">${t('tasksDoneHint')}</div>
-            </div>` : ''}
-        `;
-      }
-
-      function taskCard(r, action) {
-        const borderClass = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card' : ' open-card';
-        const dlBadge = r.deadline
-          ? `<span style="font-size:11px;color:${r.isOverdue?'var(--red)':r.isRisky?'var(--amber)':'var(--txt3)'};font-family:'DM Mono',monospace">📅 ${r.deadline}</span>`
-          : '';
-        const btn = action === 'accept'
-          ? `<button class="btn btn-warn btn-sm" style="margin-top:9px" onclick="event.stopPropagation();quickAccept(${r.id})">
-               <i class="ti ti-player-play" style="font-size:13px"></i>${t('quickAcceptBtn')}
-             </button>`
-          : `<button class="btn btn-success btn-sm" style="margin-top:9px" onclick="event.stopPropagation();openQuickClose(${r.id})">
-               <i class="ti ti-check" style="font-size:13px"></i>${t('close')}
-             </button>`;
-        return `<div class="card${borderClass}" onclick="showDetail(${r.id})">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-            <div><span style="font-size:13px;font-weight:600">${r.line} · ${r.station}</span>
-              <span class="type-pill ${TC[r.type]||'r-ad'}" style="margin-left:6px">${r.type}</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--txt)">Process Audit</div>
+              <div style="font-size:11px;color:var(--txt3)">${t('auditSub')}</div>
             </div>
-            ${dlBadge}
+            <div style="display:flex;gap:7px">
+              <button class="btn btn-sm" style="padding:7px 11px" onclick="renderAudit()"><i class="ti ti-refresh" style="font-size:14px"></i></button>
+              <a href="${exportUrl}" class="btn btn-sm" style="padding:7px 11px;text-decoration:none"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</a>
+              <button class="btn btn-primary btn-sm" style="padding:7px 11px" onclick="openAuditAdd()"><i class="ti ti-plus" style="font-size:14px"></i> ${t('addUser').replace('+ ','')}</button>
+            </div>
           </div>
-          <div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:4px">${r.problem.replace(/\n/g,' ').substring(0,70)}${r.problem.length>70?'...':''}</div>
-          <div style="font-size:11px;color:var(--txt3);font-family:'DM Mono',monospace">${r.date} · ${r.addedBy}</div>
-          ${btn}
-        </div>`;
+
+          <div class="det-block" style="margin-bottom:12px;padding:11px 12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">
+              <input class="inp" id="af-workshop" placeholder="${t('auditWorkshop')}" value="${workshop}" style="font-size:12px;padding:8px 9px">
+              <input class="inp" id="af-line"     placeholder="${t('auditLine')}"     value="${line}"     style="font-size:12px;padding:8px 9px">
+              <input class="inp" id="af-station"  placeholder="${t('auditStation')}"  value="${station}"  style="font-size:12px;padding:8px 9px">
+            </div>
+            <div style="display:flex;gap:7px">
+              <button class="btn btn-primary btn-sm" style="flex:1;padding:8px" onclick="queryAudit()"><i class="ti ti-search" style="font-size:13px"></i> ${t('auditSearch')}</button>
+              <button class="btn btn-sm" style="padding:8px 14px" onclick="resetAudit()"><i class="ti ti-refresh" style="font-size:13px"></i> ${t('auditReset')}</button>
+            </div>
+          </div>
+
+          ${cardsHtml}
+          ${paginHtml}
+          <div style="height:16px"></div>`;
       }
 
-      async function quickAccept(id) {
-        const r = await api(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'inprogress' }) });
-        if (r && !r.error) { toast(t('inProgressSet')); renderTasks().then(initScrollHide); loadNotifications(); }
-        else toast(r?.error || 'Xato', false);
+      function queryAudit() {
+        _auditState.workshop = $('af-workshop')?.value?.trim()||'';
+        _auditState.line     = $('af-line')?.value?.trim()||'';
+        _auditState.station  = $('af-station')?.value?.trim()||'';
+        _auditState.page = 1;
+        renderAudit();
+      }
+      function resetAudit() {
+        _auditState = { page:1, workshop:'', line:'', station:'', total:0, limit:20 };
+        renderAudit();
+      }
+      function auditPageGo(p) {
+        const tp = Math.ceil(_auditState.total / _auditState.limit) || 1;
+        if (p<1||p>tp) return;
+        _auditState.page = p;
+        renderAudit();
       }
 
-      let _qcId = null;
-      function openQuickClose(id) {
-        _qcId = id;
-        $('qc-action').value = '';
-        $('qc-err').textContent = '';
-        $('quick-close-modal').classList.add('show');
+      // ── Audit Add ────────────────────────────────────────────
+      function addAuditMedia(input) {
+        Array.from(input.files).forEach(f => _auditAddMf.push(f));
+        input.value = '';
+        renderAuditAddGrid();
       }
-      function closeQuickClose() { $('quick-close-modal').classList.remove('show'); }
-      async function confirmQuickClose() {
-        const action = $('qc-action').value.trim();
-        if (!action) { $('qc-err').textContent = t('actionRequired'); return; }
-        const r = await api(`/api/records/${_qcId}`, { method: 'PATCH', body: JSON.stringify({ status: 'closed', action }) });
-        if (r && !r.error) {
-          toast(t('closedSet'));
-          closeQuickClose();
-          if (curTab === 'tasks') renderTasks().then(initScrollHide);
-          else renderList().then(initScrollHide);
-          loadNotifications();
-        } else toast(r?.error || 'Xato', false);
+      function removeAuditMedia(idx) { _auditAddMf.splice(idx,1); renderAuditAddGrid(); }
+      function renderAuditAddGrid() {
+        const grid = $('aa-grid'); if (!grid) return;
+        const thumbs = _auditAddMf.map((f,i) => {
+          const isVid = f.type.startsWith('video/');
+          const url = URL.createObjectURL(f);
+          return `<div class="media-thumb">
+            ${isVid?`<video src="${url}" preload="metadata" style="width:100%;height:100%;object-fit:cover"></video><div class="vid-icon"><i class="ti ti-player-play" style="font-size:16px;color:#fff"></i></div>`:`<img src="${url}" alt="">`}
+            <div class="rm-btn" onclick="removeAuditMedia(${i})">✕</div>
+          </div>`;
+        }).join('');
+        grid.innerHTML = thumbs + `<div class="media-add-btn" onclick="$('aa-file').click()"><i class="ti ti-plus"></i><span>Qo'sh</span></div>`;
+      }
+      function openAuditAdd() {
+        _auditAddMf = [];
+        ['aa-qcode','aa-category','aa-desc','aa-disc-dept','aa-resp','aa-deadline'].forEach(id => { const el=$(id); if(el) el.value=''; });
+        if ($('aa-level')) $('aa-level').value = 'Medium';
+        if ($('aa-err')) $('aa-err').textContent = '';
+        if ($('aa-workshop')) $('aa-workshop').value = 'Welding';
+        aaUpdateLine();
+        renderAuditAddGrid();
+        $('audit-add-modal').classList.add('show');
+      }
+      function closeAuditAdd() { $('audit-add-modal').classList.remove('show'); }
+      async function saveAuditAdd() {
+        const ws=$('aa-workshop').value.trim(), ln=$('aa-line').value.trim(), st=$('aa-station').value.trim();
+        const qc=$('aa-qcode').value.trim(), cat=$('aa-category').value.trim(), desc=$('aa-desc').value.trim();
+        const dd=$('aa-disc-dept').value.trim(), resp=$('aa-resp').value.trim(), dl=$('aa-deadline').value;
+        if (!ws||!ln||!st||!qc||!cat||!desc||!dd||!resp||!dl) { $('aa-err').textContent = t('auditFillAll'); return; }
+        const today = new Date().toISOString().slice(0,10);
+        if (dl < today) { $('aa-err').textContent = t('auditDeadlineErr'); return; }
+        $('aa-err').textContent = '';
+        const fd = new FormData();
+        fd.append('workshop',ws); fd.append('line_body',ln); fd.append('station',st);
+        fd.append('question_code',qc); fd.append('problem_category',cat);
+        fd.append('problem_level',$('aa-level').value);
+        fd.append('description',desc); fd.append('discovery_dept',dd);
+        fd.append('responsible_person',resp); fd.append('target_date',dl);
+        _auditAddMf.forEach(f => fd.append('auditMedia',f));
+        const res = await fetch('/api/audit', { method:'POST', body:fd });
+        const d = await res.json();
+        if (d.error) { $('aa-err').textContent = d.error; return; }
+        closeAuditAdd(); toast(t('auditSaved')); renderAudit();
+      }
+
+      // ── Audit View/Edit ──────────────────────────────────────
+      async function openAuditView(id) {
+        _auditViewId = id;
+        const r = await api(`/api/audit/${id}`); if (!r||r.error) { toast('Xato',false); return; }
+        const isClosed = r.status === 'closed';
+        const isAdmin  = ME?.role === 'admin';
+        const NEXT = { open:'processing', processing:'pending_verification', pending_verification:'closed' };
+        const NEXT_LBL = t('auditNextBtn');
+        const NEXT_CLS = t('auditNextCls');
+
+        $('av-body').innerHTML = `
+          ${isClosed ? `
+          <div id="av-qr-wrap" style="display:flex;gap:12px;align-items:center;background:var(--card2);border:1.5px solid #43a047;border-radius:12px;padding:14px;margin-bottom:14px">
+            <canvas id="av-qr-canvas" style="border-radius:8px;border:1px solid var(--border);flex-shrink:0"></canvas>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:#43a047;margin-bottom:3px"><i class="ti ti-circle-check"></i> Yopilgan muammo</div>
+              <div style="font-size:11px;color:var(--txt3);margin-bottom:10px">QR skan → ochiladi · chop eting</div>
+              <button onclick="printAuditIssue(${r.id})" style="width:100%;background:#43a047;color:#fff;border:none;padding:9px;border-radius:9px;cursor:pointer;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px">
+                <i class="ti ti-printer"></i> Chop etish / Print
+              </button>
+            </div>
+          </div>` : ''}
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">
+            <span class="badge ${AUDIT_ST_CLS[r.status]||'ab-open'}">${auditStLbl()[r.status]||r.status}</span>
+            <span class="badge ${AUDIT_LV_CLS[r.problemLevel]||'ab-lv-medium'}">${auditLvLbl()[r.problemLevel]||r.problemLevel}</span>
+            ${r.questionCode?`<span style="font-size:10px;background:var(--border);border-radius:10px;padding:3px 9px;color:var(--txt2);font-family:'DM Mono',monospace">${r.questionCode}</span>`:''}
+          </div>
+
+          <div class="det-block" style="margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+              <div><div class="dl">${t('auditWorkshop')}</div><div class="dv">${r.workshop}</div></div>
+              <div><div class="dl">${t('auditLine')}</div><div class="dv">${r.lineBody}</div></div>
+              <div><div class="dl">${t('auditStation')}</div><div class="dv">${r.station}</div></div>
+              <div><div class="dl">${t('auditProbCat')}</div><div class="dv">${r.problemCategory||'—'}</div></div>
+              <div><div class="dl">${t('auditFoundDept')}</div><div class="dv">${r.discoveryDept||'—'}</div></div>
+              <div><div class="dl">${t('auditAddedBy')}</div><div class="dv" style="font-family:'DM Mono',monospace">${r.addedBy}</div></div>
+            </div>
+          </div>
+
+          <div class="det-block" style="margin-bottom:10px">
+            <div class="dl" style="margin-bottom:5px">${t('auditDesc')}</div>
+            <div class="dv" style="white-space:pre-line;line-height:1.6">${r.description}</div>
+          </div>
+
+          ${!isClosed ? `
+          <div class="det-block" style="margin-bottom:10px">
+            <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:10px">${t('auditEditTitle')}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div class="field" style="margin:0"><label style="font-size:11px">${t('auditResp')}</label><input class="inp" id="av-resp" value="${r.responsiblePerson}" style="font-size:12px"></div>
+              <div class="field" style="margin:0"><label style="font-size:11px">${t('auditDeadline')}</label><input class="inp" type="date" id="av-deadline" value="${r.targetDate||''}"></div>
+            </div>
+            <div class="field" style="margin-bottom:8px"><label style="font-size:11px">${t('auditProcessLabel')}</label>
+              <textarea class="inp" id="av-progress" rows="2" placeholder="${t('auditProgressPh')}" style="font-size:12px">${r.progress}</textarea>
+            </div>
+            ${r.status==='pending_verification'?`
+            <div class="field" style="margin-bottom:8px"><label style="font-size:11px">${t('auditCorrLabel')} <span style="color:var(--red)">*</span></label>
+              <textarea class="inp" id="av-corrective" rows="2" placeholder="${t('auditCorrPh')}" style="font-size:12px">${r.correctiveAction}</textarea>
+            </div>`:''}
+            <div id="av-err" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:6px"></div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <button class="btn btn-warn btn-sm" style="flex:1" onclick="saveAuditEdit()">
+                <i class="ti ti-device-floppy" style="font-size:13px"></i> ${t('save')}
+              </button>
+              ${NEXT[r.status]?`<button class="btn ${NEXT_CLS[r.status]} btn-sm" style="flex:1" onclick="changeAuditStatus(${r.id},'${NEXT[r.status]}')">
+                ${NEXT_LBL[r.status]}
+              </button>`:''}
+            </div>
+          </div>` : `
+          <div class="det-block" style="margin-bottom:10px;border-left:3px solid var(--green)">
+            <div class="dl" style="margin-bottom:4px">${t('auditProcessLabel')}</div>
+            <div class="dv" style="margin-bottom:8px;white-space:pre-line">${r.progress||'—'}</div>
+            <div class="dl" style="margin-bottom:4px">${t('auditCorrLabel')}</div>
+            <div class="dv" style="white-space:pre-line">${r.correctiveAction||'—'}</div>
+            ${r.closedBy?`<div style="margin-top:8px;font-size:11px;color:var(--txt3)">${t('auditClosedBy')}: <b>${r.closedBy}</b></div>`:''}
+          </div>`}
+
+          ${r.mediaFiles&&r.mediaFiles.length?`
+          <div class="det-block" style="margin-bottom:10px">
+            <div class="dl" style="margin-bottom:8px">${t('auditAttach')}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              ${r.mediaFiles.map(m=>m.type==='video'
+                ?`<video src="${m.url}" controls style="width:120px;height:80px;border-radius:9px;object-fit:cover;border:1px solid var(--border)"></video>`
+                :`<img src="${m.url}" onclick="openLB('${m.url}')" style="width:80px;height:80px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border)">`
+              ).join('')}
+            </div>
+          </div>`:''}
+
+          ${!isClosed ? `<button class="btn btn-sm" style="width:100%;margin-top:8px;padding:10px;border:1.5px dashed var(--border)" onclick="openQR('audit',${r.id},'${r.workshop} · ${r.station}')">
+            <i class="ti ti-qrcode" style="font-size:16px"></i> QR Kod
+          </button>` : ''}
+          ${isAdmin?`<button class="btn btn-danger btn-sm" style="width:100%;margin-top:6px" onclick="deleteAuditIssue(${r.id})">
+            <i class="ti ti-trash" style="font-size:14px"></i> ${t('auditDelete')}
+          </button>`:''}
+          <div style="height:8px"></div>`;
+
+        $('av-title').textContent = `#${r.id} · ${r.workshop} · ${r.lineBody}`;
+        if (isClosed) {
+          const _qUrl = window.location.origin + window.location.pathname + '?open=audit_' + r.id;
+          QRCode.toCanvas($('av-qr-canvas'), _qUrl, { width:90, margin:1, color:{dark:'#1A1A2E',light:'#F4FDF4'} }, ()=>{});
+        }
+        $('audit-view-modal').classList.add('show');
+      }
+      function closeAuditView() { $('audit-view-modal').classList.remove('show'); }
+
+      async function printAuditIssue(id) {
+        const r = await api(`/api/audit/${id}`); if (!r||r.error) return;
+        const STATUS_UZ = {open:'Ochiq',processing:'Jarayonda',pending_verification:'Tekshirishda',closed:'Yopilgan',overdue:'Kechikkan'};
+        const LEVEL_UZ  = {Low:'Past',Medium:"O'rta",High:'Yuqori',Critical:'Kritik'};
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Muammo #${r.id}</title>
+<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16mm 20mm;color:#000;margin:0}
+.hdr{border-bottom:2px solid #1565C0;margin-bottom:8px;padding-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end}
+.hdr h2{margin:0;font-size:15px;color:#1565C0}.hdr small{font-size:10px;color:#555}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{background:#1565C0;color:#fff;padding:6px 9px;font-size:11px;text-align:left;font-weight:700}
+td{border:1px solid #ccc;padding:7px 9px;vertical-align:top;font-size:11px}
+.lb{font-weight:700;color:#555;font-size:10px;margin-bottom:2px}.vl{font-size:12px}
+.sig{display:flex;justify-content:space-around;margin-top:40px;text-align:center;font-size:11px}
+.sig div{min-width:140px}.sig span{display:block;border-top:1px solid #000;padding-top:4px;margin-top:30px}
+@media print{*{-webkit-print-color-adjust:exact;color-adjust:exact}}</style></head><body>
+<div class="hdr"><h2>Jarayon Intizomi Auditi — Muammo #${r.id}</h2><small>FM-WI-C04-UZ-02-11-01A &nbsp;|&nbsp; Texnologiyalar departamenti</small></div>
+<table>
+<tr><th colspan="4">Asosiy ma'lumotlar</th></tr>
+<tr>
+  <td><div class="lb">Sex/Workshop</div><div class="vl">${r.workshop}</div></td>
+  <td><div class="lb">Liniya</div><div class="vl">${r.lineBody}</div></td>
+  <td><div class="lb">Stansiya</div><div class="vl">${r.station}</div></td>
+  <td><div class="lb">Daraja</div><div class="vl">${LEVEL_UZ[r.problemLevel]||r.problemLevel}</div></td>
+</tr>
+<tr>
+  <td><div class="lb">Savol kodi</div><div class="vl">${r.questionCode||'—'}</div></td>
+  <td><div class="lb">Muammo turi</div><div class="vl">${r.problemCategory||'—'}</div></td>
+  <td><div class="lb">Topgan bo'lim</div><div class="vl">${r.discoveryDept||'—'}</div></td>
+  <td><div class="lb">Holat</div><div class="vl">${STATUS_UZ[r.status]||r.status}</div></td>
+</tr>
+<tr>
+  <td colspan="2"><div class="lb">Mas'ul shaxs</div><div class="vl">${r.responsiblePerson||'—'}</div></td>
+  <td colspan="2"><div class="lb">Yakunlash muddati</div><div class="vl">${r.targetDate?String(r.targetDate).slice(0,10):'—'}</div></td>
+</tr>
+<tr><td colspan="4"><div class="lb">Muammo tavsifi</div><div class="vl" style="white-space:pre-line;line-height:1.6">${r.description}</div></td></tr>
+<tr><td colspan="4"><div class="lb">Tuzatish jarayoni</div><div class="vl" style="white-space:pre-line">${r.progress||'—'}</div></td></tr>
+<tr><td colspan="4"><div class="lb">Tuzatish chorasi</div><div class="vl" style="white-space:pre-line">${r.correctiveAction||'—'}</div></td></tr>
+<tr>
+  <td colspan="2"><div class="lb">Qo'shgan</div><div class="vl">${r.addedBy}</div></td>
+  <td><div class="lb">Qo'shilgan sana</div><div class="vl">${r.createdAt?String(r.createdAt).slice(0,10):'—'}</div></td>
+  <td><div class="lb">Yopgan</div><div class="vl">${r.closedBy||'—'}</div></td>
+</tr>
+</table>
+<div class="sig">
+  <div><span>Mas'ul / 责任人</span></div>
+  <div><span>Auditor / 审核人员</span></div>
+  <div><span>Texnologiyalar dept.</span></div>
+</div>
+</body></html>`;
+        const w = window.open('','_blank');
+        w.document.write(html); w.document.close();
+        setTimeout(()=>{ w.focus(); w.print(); }, 400);
+      }
+
+      async function saveAuditEdit() {
+        const body = {
+          responsible_person: $('av-resp')?.value?.trim()||'',
+          target_date: $('av-deadline')?.value||null,
+          progress: $('av-progress')?.value?.trim()||'',
+        };
+        const corr = $('av-corrective')?.value?.trim();
+        if (corr !== undefined) body.corrective_action = corr;
+        const r = await api(`/api/audit/${_auditViewId}`, { method:'PATCH', body: JSON.stringify(body) });
+        if (r&&!r.error) { toast(t('auditUpdated')); closeAuditView(); renderAudit(); }
+        else if ($('av-err')) $('av-err').textContent = r?.error||'Xato';
+      }
+
+      async function changeAuditStatus(id, status) {
+        if ($('av-err')) $('av-err').textContent = '';
+        const body = { status,
+          responsible_person: $('av-resp')?.value?.trim()||'',
+          target_date: $('av-deadline')?.value||null,
+          progress: $('av-progress')?.value?.trim()||'',
+        };
+        if (status === 'closed') {
+          const corr = $('av-corrective')?.value?.trim();
+          if (!corr) { if ($('av-err')) $('av-err').textContent = t('auditCorrectiveReq'); return; }
+          body.corrective_action = corr;
+        }
+        const r = await api(`/api/audit/${id}`, { method:'PATCH', body: JSON.stringify(body) });
+        if (r&&!r.error) { toast(status==='closed'?t('auditClosed'):t('auditStatusOk')); closeAuditView(); renderAudit(); }
+        else if ($('av-err')) $('av-err').textContent = r?.error||'Xato';
+      }
+
+      async function deleteAuditIssue(id) {
+        if (!confirm(t('auditConfirmDel'))) return;
+        const r = await api(`/api/audit/${id}`, { method:'DELETE' });
+        if (r&&!r.error) { toast(t('auditDeleted')); closeAuditView(); renderAudit(); }
+        else toast(r?.error||'Xato', false);
+      }
+
+      // ── Kunlik Tekshiruv (Daily Checklist) ───────────────────────
+      function _checkItemHtml(item) {
+        const okBg  = item.response === 'ok'  ? '#2E7D32' : 'transparent';
+        const okCl  = item.response === 'ok'  ? '#ffffff' : '#2E7D32';
+        const nokBg = item.response === 'nok' ? '#C62828' : 'transparent';
+        const nokCl = item.response === 'nok' ? '#ffffff' : '#C62828';
+        const sub   = item.subLabel ? '<div style="font-size:11px;color:var(--txt3);margin-top:2px">' + item.subLabel + '</div>' : '';
+        return '<div class="card" style="margin-bottom:8px;padding:12px 14px">'
+          + '<div style="display:flex;align-items:center;gap:10px">'
+          + '<div style="flex:1;min-width:0">'
+          + '<div style="font-size:13px;color:var(--txt);line-height:1.45">' + item.question + '</div>'
+          + sub
+          + '</div>'
+          + '<div style="display:flex;gap:6px;flex-shrink:0">'
+          + '<button onclick="checkRespond(' + item.id + ',\'ok\')" style="min-width:44px;padding:8px 14px;border-radius:9px;border:2px solid #2E7D32;font-size:12px;font-weight:800;cursor:pointer;background:' + okBg + ';color:' + okCl + '">OK</button>'
+          + '<button onclick="checkRespond(' + item.id + ',\'nok\')" style="min-width:44px;padding:8px 10px;border-radius:9px;border:2px solid #C62828;font-size:12px;font-weight:800;cursor:pointer;background:' + nokBg + ';color:' + nokCl + '">NOK</button>'
+          + '</div></div></div>';
+      }
+
+      async function renderChecklist() {
+        const today = new Date().toISOString().slice(0, 10);
+        const data = await api('/api/checklist?date=' + today);
+        if (!data || data.error) {
+          $('main-content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--txt3)">Xato: ' + (data && data.error ? data.error : 'Server javobi yo\'q') + '</div>';
+          return;
+        }
+        const groups = data.groups || {};
+        const total    = data.total    || 0;
+        const answered = data.answered || 0;
+        const nok      = data.nok      || 0;
+        const pct = total > 0 ? Math.round(answered / total * 100) : 0;
+        const isAdmin = ME && ME.role === 'admin';
+
+        const dp = today.split('-');
+        const dateStr = dp[2] + '.' + dp[1] + '.' + dp[0];
+
+        let groupsHtml = '';
+        const cats = Object.keys(groups);
+        for (let ci = 0; ci < cats.length; ci++) {
+          const cat = cats[ci];
+          const items = groups[cat];
+          let itemsHtml = '';
+          for (let ii = 0; ii < items.length; ii++) {
+            itemsHtml += _checkItemHtml(items[ii]);
+          }
+          groupsHtml += '<div style="margin-bottom:18px">'
+            + '<div style="font-size:10px;font-weight:800;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;padding:0 2px 8px">' + cat + '</div>'
+            + itemsHtml
+            + '</div>';
+        }
+
+        const nokHtml = nok > 0
+          ? '<div style="font-size:11px;color:#C62828;margin-top:7px">' + nok + ' ' + t('checkNok') + '</div>'
+          : (pct === 100 ? '<div style="font-size:11px;color:#2E7D32;margin-top:7px">' + t('checkAllDone') + '</div>' : '');
+
+        const manageBtn = isAdmin
+          ? '<button class="btn btn-sm" style="width:100%;padding:11px;border:1.5px dashed var(--border);margin-top:4px" onclick="openCheckManage()"><i class="ti ti-settings" style="font-size:14px"></i> ' + t('checkManage') + '</button>'
+          : '';
+
+        const noDataHtml = cats.length === 0
+          ? '<div style="text-align:center;padding:40px;color:var(--txt3)">' + t('checkNoItems') + '</div>'
+          : '';
+
+        $('main-content').innerHTML = `
+          <div style="background:linear-gradient(135deg,#1565C0,#1976D2);border-radius:16px;padding:16px 18px;margin-bottom:14px;color:#fff">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="font-size:16px;font-weight:800">${t('checkTitle')}</div>
+              <div style="font-size:13px;opacity:0.85">${dateStr}</div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:14px;padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="font-size:13px;font-weight:600;color:var(--txt)">${t('checkStatus')}</div>
+              <div style="font-size:14px;font-weight:800;color:#1565C0">${answered}/${total} <span style="color:#43a047">${pct}%</span></div>
+            </div>
+            <div style="background:var(--border);border-radius:8px;height:7px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#1565C0,#43a047);border-radius:8px"></div>
+            </div>
+            ${nokHtml}
+          </div>
+          ${groupsHtml}${noDataHtml}
+          ${manageBtn}
+          <div style="height:8px"></div>`;
+      }
+
+      async function checkRespond(itemId, status) {
+        const today = new Date().toISOString().slice(0, 10);
+        const r = await api('/api/checklist/respond', { method: 'POST', body: JSON.stringify({ item_id: itemId, status: status, date: today }) });
+        if (r && !r.error) renderChecklist().then(initScrollHide);
+        else toast('Xato', false);
+      }
+
+      async function openCheckManage() {
+        const data = await api('/api/checklist/items');
+        if (!data || data.error) return;
+        $('check-manage-body').innerHTML = `
+          <div class="det-block" style="margin-bottom:14px">
+            <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:10px">${t('checkAddTitle')}</div>
+            <div class="field" style="margin-bottom:8px"><label style="font-size:11px">${t('checkCat')} *</label><input class="inp" id="ck-cat" placeholder="WELDING — SAFETY"></div>
+            <div class="field" style="margin-bottom:8px"><label style="font-size:11px">${t('checkQ')} *</label><textarea class="inp" id="ck-q" rows="2" style="font-size:12px"></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div class="field" style="margin:0"><label style="font-size:11px">${t('checkSub')}</label><input class="inp" id="ck-sub" style="font-size:12px"></div>
+              <div class="field" style="margin:0"><label style="font-size:11px">${t('checkOrd')}</label><input class="inp" type="number" id="ck-ord" value="${data.length+1}" style="font-size:12px"></div>
+            </div>
+            <div id="ck-err" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:6px"></div>
+            <button class="btn btn-primary btn-sm" style="width:100%" onclick="saveCheckItem()">
+              <i class="ti ti-plus"></i> ${t('checkAdd')}
+            </button>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);margin-bottom:8px">${t('checkAll')} (${data.length})</div>
+          ${data.map(item => `
+          <div class="card" style="margin-bottom:8px;padding:11px 13px;display:flex;align-items:flex-start;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;font-weight:700;color:var(--txt3);margin-bottom:2px;text-transform:uppercase">${item.category}</div>
+              <div style="font-size:12px;color:var(--txt);line-height:1.4">${item.question}</div>
+              ${item.sub_label ? `<div style="font-size:11px;color:var(--txt3)">${item.sub_label}</div>` : ''}
+            </div>
+            <div style="display:flex;gap:5px;flex-shrink:0;flex-direction:column;align-items:flex-end">
+              <button onclick="toggleCheckItem(${item.id},${!item.active})"
+                style="padding:4px 9px;border-radius:6px;border:1px solid;cursor:pointer;font-size:11px;font-weight:600;background:${item.active?'#43a047':'var(--border)'};color:${item.active?'#fff':'var(--txt3)'};border-color:${item.active?'#43a047':'var(--border)'}">
+                ${item.active ? t('checkActive') : t('checkInactive')}
+              </button>
+              <button onclick="deleteCheckItem(${item.id})"
+                style="padding:4px 9px;border-radius:6px;border:1px solid var(--red);cursor:pointer;font-size:11px;background:transparent;color:var(--red)">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>
+          </div>`).join('')}
+          <div style="height:8px"></div>`;
+        $('check-manage-modal').classList.add('show');
+      }
+
+      function closeCheckManage() { $('check-manage-modal').classList.remove('show'); }
+
+      async function saveCheckItem() {
+        const cat = $('ck-cat')?.value?.trim();
+        const q   = $('ck-q')?.value?.trim();
+        const sub = $('ck-sub')?.value?.trim() || '';
+        const ord = parseInt($('ck-ord')?.value) || 0;
+        if (!cat || !q) { if($('ck-err')) $('ck-err').textContent = t('auditFillAll'); return; }
+        const r = await api('/api/checklist/items', { method:'POST', body: JSON.stringify({ category:cat, question:q, sub_label:sub, order_num:ord }) });
+        if (r && !r.error) { toast(t('checkSaved')); closeCheckManage(); renderChecklist().then(initScrollHide); }
+        else if ($('ck-err')) $('ck-err').textContent = r?.error || 'Xato';
+      }
+
+      async function toggleCheckItem(id, active) {
+        const r = await api(`/api/checklist/items/${id}`, { method:'PATCH', body: JSON.stringify({ active }) });
+        if (r && !r.error) { closeCheckManage(); openCheckManage(); }
+      }
+
+      async function deleteCheckItem(id) {
+        if (!confirm(t('checkConfirmDel'))) return;
+        const r = await api(`/api/checklist/items/${id}`, { method:'DELETE' });
+        if (r && !r.error) { toast(t('checkDeleted')); closeCheckManage(); renderChecklist().then(initScrollHide); }
       }
 
       function openUserModal() { $('add-user-modal').classList.add('show') }
       function closeUserModal() { $('add-user-modal').classList.remove('show'); $('nu-err').textContent = '' }
 
       let _editUserId = null;
-      function openEditModal(id, username, full_name, role, line) {
+      function openEditModal(id, username, full_name, role, line, email) {
         _editUserId = id;
         $('eu-user').value = username;
         $('eu-name').value = full_name;
         $('eu-role').value = role;
         $('eu-line').value = line;
+        if ($('eu-email')) $('eu-email').value = email || '';
         $('eu-pass').value = '';
         $('eu-err').textContent = '';
         $('edit-user-modal').classList.add('show');
@@ -1913,10 +3511,11 @@
         const role = $('eu-role').value;
         const line = $('eu-line').value.trim();
         const password = $('eu-pass').value;
+        const email = $('eu-email') ? $('eu-email').value.trim() : '';
         if (!full_name) { $('eu-err').textContent = t('allFields'); return; }
         const res = await api(`/api/users/${_editUserId}`, {
           method: 'PATCH',
-          body: JSON.stringify({ full_name, role, line, password })
+          body: JSON.stringify({ full_name, role, line, password, email: email || null })
         });
         if (!res || res.error) { $('eu-err').textContent = res?.error || 'Xato'; return; }
         toast(t('userUpdated'));
@@ -1927,10 +3526,12 @@
       async function saveUser() {
         const u = $('nu-user').value.trim(), p = $('nu-pass').value.trim(), n = $('nu-name').value.trim(), r = $('nu-role').value, l = $('nu-line').value.trim();
         if (!u || !p || !n) { $('nu-err').textContent = t('allFields'); return }
-        const res = await api('/api/users', { method: 'POST', body: JSON.stringify({ username: u, password: p, full_name: n, role: r, line: l }) });
+        const em = $('nu-email') ? $('nu-email').value.trim() : '';
+        const res = await api('/api/users', { method: 'POST', body: JSON.stringify({ username: u, password: p, full_name: n, role: r, line: l, email: em || null }) });
         if (!res || res.error) { $('nu-err').textContent = res?.error || 'Xato'; return }
         toast(t('userAdded')); closeUserModal();
         $('nu-user').value = ''; $('nu-pass').value = ''; $('nu-name').value = ''; $('nu-line').value = '';
+        if ($('nu-email')) $('nu-email').value = '';
         renderUsers();
       }
 
@@ -1946,169 +3547,379 @@
         $('a-date').value = d.toISOString().split('T')[0];
         $('a-time').value = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         ['before','after'].forEach(k => {
-          $('box-'+k).innerHTML = `<i class="ti ti-cloud-upload"></i><span>${t('uploadPhoto')}</span>`;
+          _mf[k] = [];
           $('f-'+k).value = '';
+          renderMediaGrid(k);
         });
-        $('a-station').value = ''; $('a-prob').value = ''; $('a-action').value = '';
+        $('a-prob').value = ''; $('a-action').value = '';
         $('a-deadline').value = ''; $('a-err').textContent = '';
-
-        const isAssembler = ME.role === 'assembler';
+        if ($('a-line')) $('a-line').value = 'Welding';
+        updateStationSelect();
 
         // ── Rol bo'yicha hint ──────────────────────────────────
-        $('a-role-hint').innerHTML = `<div style="background:${isAssembler?'var(--blue-lt)':'var(--amber-lt)'};border-radius:var(--r-sm);padding:10px 13px;margin-bottom:12px;font-size:12px;color:${isAssembler?'var(--blue)':'var(--amber)'};display:flex;align-items:flex-start;gap:8px;line-height:1.5">
-          <i class="ti ${isAssembler?'ti-send':'ti-adjustments'}" style="font-size:16px;flex-shrink:0;margin-top:1px"></i>
-          <span>${isAssembler ? t('addHintAssembler') : t('addHintAdmin')}</span>
+        $('a-role-hint').innerHTML = `<div style="background:var(--amber-lt);border-radius:var(--r-sm);padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--amber);display:flex;align-items:flex-start;gap:8px;line-height:1.5">
+          <i class="ti ti-adjustments" style="font-size:16px;flex-shrink:0;margin-top:1px"></i>
+          <span>${t('addHintAdmin')}</span>
         </div>`;
 
-        // ── Liniya: assembler uchun profildan oldin to'ldirish ──
-        if (isAssembler && ME.line) {
-          const opts = $('a-line').options;
-          for (let i = 0; i < opts.length; i++) {
-            if (opts[i].text === ME.line) { $('a-line').selectedIndex = i; break; }
-          }
+        // ── Liniya: profildan avtomatik to'ldirish ──
+        if (ME.line && $('a-line')) {
+          const mapped = _lineParent[ME.line] ? _groupLine(ME.line) : ME.line;
+          const opt = Array.from($('a-line').options).find(o => o.value === mapped);
+          if (opt) $('a-line').value = opt.value;
+          updateStationSelect();
         }
 
-        // ── Auditor dropdown ────────────────────────────────────
-        if (isAssembler) {
-          $('a-auditor').innerHTML = `<option value="${ME.name}">${ME.name}</option>`;
-          $('a-auditor').disabled = true;
-          $('a-auditor').style.opacity = '0.6';
-        } else {
-          $('a-auditor').disabled = false;
-          $('a-auditor').style.opacity = '';
-          const names = await api('/api/assemblers');
-          $('a-auditor').innerHTML = (names || []).map(n => `<option>${n}</option>`).join('');
-        }
-
-        // ── Rol bo'yicha maydonlarni ko'rsatish/yashirish ──────
-        const show = (id, visible) => {
-          const el = $(id); if (el) el.style.display = visible ? '' : 'none';
-        };
-        show('a-action-wrap',  !isAssembler);   // Harakat rejasi — faqat admin
-        show('a-deadline-wrap', !isAssembler);   // Muddat — faqat admin
-        show('a-after-wrap',    !isAssembler);   // "Keyin" rasm — faqat admin
+        // ── Auditor dropdown — barcha userlar ──────────────────
+        const names = await api('/api/assemblers');
+        $('a-auditor').disabled = false;
+        $('a-auditor').style.opacity = '';
+        $('a-auditor').innerHTML = (names || []).map(n =>
+          `<option${n === ME.name ? ' selected' : ''}>${n}</option>`
+        ).join('');
 
         renderStaticLabels();
+
+        // ── Qo'shilgan muammolar ro'yxatini yuklash ──────────────
+        loadAddRecordsList();
       }
 
-      function prevImg(k, input) {
-        const file = input.files[0]; if (!file) return;
-        const r = new FileReader();
-        r.onload = e => { $('box-' + k).innerHTML = `<img src="${e.target.result}" style="width:100%;height:88px;object-fit:cover;border-radius:7px"><div style="font-size:10px;color:var(--green);margin-top:4px;font-weight:600">✓ Yuklandi</div>` };
-        r.readAsDataURL(file);
+      async function loadAddRecordsList() {
+        const el = $('add-records-list'); if (!el) return;
+        const recs = await api('/api/records?scope=all');
+        if (!recs || !recs.length) {
+          el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--txt3);font-size:12px">' + t('noIssues') + '</div>';
+          return;
+        }
+        const title = $('add-rlist-title');
+        if (title) title.textContent = 'Qo\'shilgan muammolar (' + recs.length + ')';
+        let html = '';
+        for (let i = recs.length - 1; i >= 0; i--) {
+          const r = recs[i];
+          const stColor = r.status==='open'?'#E65100':r.status==='inprogress'?'#1565C0':'#2E7D32';
+          const stBg    = r.status==='open'?'#FFF3E0':r.status==='inprogress'?'#E3F2FD':'#E8F5E9';
+          const clr     = lc(r.line);
+          const prob    = r.problem.replace(/\n/g,' ').substring(0,60) + (r.problem.length>60?'…':'');
+          html += '<div onclick="showDetail('+r.id+')" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid '+clr
+            +';border-radius:12px;padding:10px 12px;cursor:pointer;margin-bottom:7px">'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+            +'<span style="font-size:10px;background:'+stBg+';color:'+stColor+';border-radius:20px;padding:2px 8px;font-weight:700">'+(t('status')[r.status]||r.status)+'</span>'
+            +'<span style="font-size:10px;color:var(--txt3);font-family:\'DM Mono\',monospace">'+r.date+'</span>'
+            +'<span style="font-size:10px;font-weight:600;color:'+clr+';margin-left:auto">'+r.line+'</span>'
+            +'</div>'
+            +'<div style="font-size:12px;color:var(--txt2);line-height:1.45">'+prob+'</div>'
+            +'<div style="font-size:10px;color:var(--txt3);margin-top:3px">'+r.station+' · '+r.type+'</div>'
+            +'</div>';
+        }
+        el.innerHTML = html;
       }
 
+      const _mf = { before: [], after: [] };
+      let _closeMf = [];
+
+      function addCloseMedia(input) {
+        Array.from(input.files).forEach(f => _closeMf.push(f));
+        input.value = '';
+        renderCloseGrid();
+      }
+      function removeCloseMedia(idx) {
+        _closeMf.splice(idx, 1);
+        renderCloseGrid();
+      }
+      function renderCloseGrid() {
+        const grid = $('close-grid');
+        if (!grid) return;
+        const thumbs = _closeMf.map((f, i) => {
+          const isVid = f.type.startsWith('video/');
+          const url   = URL.createObjectURL(f);
+          return `<div class="media-thumb">
+            ${isVid
+              ? `<video src="${url}" preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>
+                 <div class="vid-icon"><i class="ti ti-player-play" style="font-size:16px;color:#fff"></i></div>`
+              : `<img src="${url}" alt="">`}
+            <div class="rm-btn" onclick="removeCloseMedia(${i})">✕</div>
+          </div>`;
+        }).join('');
+        grid.innerHTML = thumbs + `<div class="media-add-btn" onclick="$('close-file').click()">
+          <i class="ti ti-plus"></i><span>Qo'sh</span>
+        </div>`;
+      }
+
+      function addMedia(key, input) {
+        Array.from(input.files).forEach(f => _mf[key].push(f));
+        input.value = '';
+        renderMediaGrid(key);
+      }
+
+      function removeMedia(key, idx) {
+        _mf[key].splice(idx, 1);
+        renderMediaGrid(key);
+      }
+
+      function renderMediaGrid(key) {
+        const grid = $('grid-' + key);
+        if (!grid) return;
+        const thumbs = _mf[key].map((f, i) => {
+          const isVid = f.type.startsWith('video/');
+          const url   = URL.createObjectURL(f);
+          return `<div class="media-thumb">
+            ${isVid
+              ? `<video src="${url}" preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>
+                 <div class="vid-icon"><i class="ti ti-player-play" style="font-size:16px;color:#fff"></i></div>`
+              : `<img src="${url}" alt="">`}
+            <div class="rm-btn" onclick="removeMedia('${key}',${i})">✕</div>
+          </div>`;
+        }).join('');
+        grid.innerHTML = thumbs + `<div class="media-add-btn" onclick="$('f-${key}').click()">
+          <i class="ti ti-plus"></i><span>Qo'sh</span>
+        </div>`;
+      }
+
+      function prevImg(k) { renderMediaGrid(k); }
+
+      // ── Offline draft queue ───────────────────────────────────
+      const DRAFT_KEY = 'nqa_offline_drafts';
+
+      function getDrafts() {
+        try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '[]'); } catch { return []; }
+      }
+      function saveDraft(draft) {
+        const list = getDrafts();
+        draft._id = Date.now();
+        draft._at = new Date().toLocaleString('uz-UZ');
+        list.push(draft);
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(list));
+      }
+      function removeDraft(id) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(getDrafts().filter(d => d._id !== id)));
+      }
+
+      function updateOfflineUI() {
+        const offline = !navigator.onLine;
+        const drafts  = getDrafts();
+        const ob = $('offline-bar'), db = $('draft-bar');
+        if (ob) ob.style.display = offline ? 'flex' : 'none';
+        if (db) {
+          if (!offline && drafts.length) {
+            db.style.display = 'flex';
+            $('draft-bar-txt').textContent = `⏳ ${drafts.length} ta qoralama kutmoqda`;
+          } else {
+            db.style.display = 'none';
+          }
+        }
+      }
+
+      function fileToBase64(file) {
+        return new Promise((res, rej) => {
+          const rd = new FileReader();
+          rd.onload = () => res(rd.result);
+          rd.onerror = rej;
+          rd.readAsDataURL(file);
+        });
+      }
+      function base64ToBlob(dataUrl) {
+        const [hdr, data] = dataUrl.split(',');
+        const mime = hdr.match(/:(.*?);/)[1];
+        const bin  = atob(data);
+        const arr  = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+      }
+
+      async function saveFormAsDraft() {
+        const draft = {
+          date: $('a-date').value, time: $('a-time').value,
+          line: $('a-line').value, type: $('a-type').value,
+          station: $('a-station').value.trim(), auditor: $('a-auditor').value,
+          problem: $('a-prob').value.trim(), action: $('a-action').value,
+          dept: $('a-dept').value, deadline: $('a-deadline').value,
+        };
+        draft.mediaBefore = []; draft.mediaAfter = [];
+        for (const f of _mf.before) { try { draft.mediaBefore.push({ b64: await fileToBase64(f), name: f.name, mime: f.type }); } catch {} }
+        for (const f of _mf.after)  { try { draft.mediaAfter.push(  { b64: await fileToBase64(f), name: f.name, mime: f.type }); } catch {} }
+        saveDraft(draft);
+        toast('📝 Qoralamaga saqlandi — internet yonganida avtomatik yuboriladi');
+        $('a-station').value = ''; $('a-prob').value = '';
+        updateOfflineUI();
+      }
+
+      async function syncDrafts() {
+        if (!navigator.onLine) { toast('Internet yo\'q, keyinroq urinib ko\'ring', false); return; }
+        const drafts = getDrafts();
+        if (!drafts.length) { toast('Qoralama yo\'q ✓'); return; }
+        let ok = 0, fail = 0;
+        for (const d of drafts) {
+          try {
+            const fd = new FormData();
+            ['date','time','line','type','station','auditor','problem','action','dept','deadline']
+              .forEach(k => { if (d[k]) fd.append(k, d[k]); });
+            (d.mediaBefore||[]).forEach(m => fd.append('mediaBefore', base64ToBlob(m.b64), m.name));
+            (d.mediaAfter ||[]).forEach(m => fd.append('mediaAfter',  base64ToBlob(m.b64), m.name));
+            const r = await fetch('/api/records', { method: 'POST', body: fd });
+            if (r.ok) { removeDraft(d._id); ok++; }
+            else fail++;
+          } catch { fail++; }
+        }
+        if (ok)   toast(`✅ ${ok} ta qoralama muvaffaqiyatli yuborildi`);
+        if (fail) toast(`⚠ ${fail} ta qoralama yuborilmadi`, false);
+        updateOfflineUI();
+        loadNotifications();
+        if (curTab === 'list') renderList().then(initScrollHide);
+        else if (curTab === 'home') renderHome().then(initScrollHide);
+      }
+
+      window.addEventListener('online',  () => { updateOfflineUI(); syncDrafts(); });
+      window.addEventListener('offline', () => { updateOfflineUI(); });
+
+      // ── Add record ────────────────────────────────────────────
       async function addRecord() {
         const station = $('a-station').value.trim(), prob = $('a-prob').value.trim();
         if (!station || !prob) { $('a-err').textContent = 'Stansiya va muammo tavsifini kiriting'; return }
-        spin('save-spin', true); $('save-btn').disabled = true;
+        spin('save-spin', true); $('save-btn').disabled = true; $('a-err').textContent = '';
+
+        if (!navigator.onLine) {
+          await saveFormAsDraft();
+          spin('save-spin', false); $('save-btn').disabled = false;
+          return;
+        }
+
         const fd = new FormData();
         fd.append('date', $('a-date').value); fd.append('time', $('a-time').value);
         fd.append('line', $('a-line').value); fd.append('type', $('a-type').value);
         fd.append('station', station); fd.append('auditor', $('a-auditor').value);
         fd.append('problem', prob); fd.append('action', $('a-action').value);
+        fd.append('dept', $('a-dept').value);
         if ($('a-deadline').value) fd.append('deadline', $('a-deadline').value);
-        const fb = $('f-before').files[0], fa = $('f-after').files[0];
-        if (fb) fd.append('imgBefore', fb);
-        if (fa) fd.append('imgAfter', fa);
+        _mf.before.forEach(f => fd.append('mediaBefore', f));
+        _mf.after.forEach(f  => fd.append('mediaAfter',  f));
         try {
           const r = await fetch('/api/records', { method: 'POST', body: fd });
           const d = await r.json();
           if (!r.ok) { $('a-err').textContent = d.error; return }
           toast(t('saved'));
-          curTab = 'list'; buildNav(); showNav(); showScreen('s-main'); renderList('all').then(initScrollHide);
-        } catch (e) { $('a-err').textContent = 'Xato yuz berdi' }
+          loadAddRecordsList();
+          $('a-prob').value=''; $('a-action').value=''; $('a-deadline').value='';
+          if ($('a-line')) $('a-line').value = 'Welding';
+          updateStationSelect();
+          _mf.before=[]; _mf.after=[]; renderMediaGrid('before'); renderMediaGrid('after');
+        } catch (e) {
+          await saveFormAsDraft();
+        }
         finally { spin('save-spin', false); $('save-btn').disabled = false; }
       }
 
       function openLB(src) { $('lb-img').src = src; $('lightbox').classList.add('show') }
       function closeLB() { $('lightbox').classList.remove('show') }
 
-      // ── Socket.io chat ─────────────────────────────────────────
-      let chatSocket = null, curRoom = 'umumiy', onlineList = [];
 
-      function initSocket() {
-        if (chatSocket) return;
-        chatSocket = io();
-        chatSocket.on('connect', () => { chatSocket.emit('join', curRoom); });
-        chatSocket.on('history', msgs => {
-          const box = $('chat-msgs'); if (!box) return;
-          box.innerHTML = '';
-          msgs.forEach(m => appendMsg(m));
-          box.scrollTop = box.scrollHeight;
-        });
-        chatSocket.on('message', m => {
-          const box = $('chat-msgs'); if (!box) return;
-          appendMsg(m);
-          box.scrollTop = box.scrollHeight;
-        });
-        chatSocket.on('online', list => {
-          onlineList = list;
-          const bar = $('online-bar'); if (!bar) return;
-          bar.innerHTML = `<div class="online-dot"></div><span style="font-size:10px;color:var(--txt3);font-weight:600">ONLINE:</span>`
-            + onlineList.map(u => `<span class="online-chip">${u.name.split(' ')[0]}</span>`).join('');
-        });
+      const _AA_LINES = {
+        'Welding':          ['Welding'],
+        'Painting':         ['Painting'],
+        'General Assembly': ['CHASSIS','TRIM','FINAL LINE','SUB LINE'],
+      };
+      const _AA_STATIONS = {
+        'Welding':    ['WS-01','WS-02','WS-03','WS-04','WS-05','WS-06','WS-07','WS-08','WS-09','WS-10'],
+        'Painting':   ['INSPECTION','TOP-COAT','PRIMER SANDING','PRIMER-COAT','UNDERBODY COATING','SEALING','ED-SANDING','PRE-TREATMENT ELECTR (PT/ED)'],
+        'CHASSIS':    ['C-01L','C-02L','C-03L','C-04L','C-05L','C-06L','C-07L','C-08L',
+                       'C-09L','C-10L','C-11L','C-12L','C-13L','C-14L','C-15L','C-16L','RIGHT'],
+        'TRIM':       ['TRIM'],
+        'FINAL LINE': ['FINAL LINE'],
+        'SUB LINE':   ['SUB LINE'],
+      };
+
+      function aaUpdateLine() {
+        const ws  = $('aa-workshop').value;
+        const sel = $('aa-line'); if (!sel) return;
+        const lines = _AA_LINES[ws] || [ws];
+        sel.innerHTML = lines.map(l => '<option value="'+l+'">'+l+'</option>').join('');
+        aaUpdateStation();
+      }
+      function aaUpdateStation() {
+        const line = $('aa-line').value;
+        const sel  = $('aa-station'); if (!sel) return;
+        const sts  = _AA_STATIONS[line] || _AA_STATIONS[$('aa-workshop').value] || [];
+        sel.innerHTML = sts.map(s => '<option value="'+s+'">'+s+'</option>').join('');
       }
 
-      function appendMsg(m) {
-        const box = $('chat-msgs'); if (!box) return;
-        const mine = m.username === ME?.username;
-        const dt = new Date(m.created_at);
-        const ts = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-        const av = m.full_name.slice(0,2).toUpperCase();
-        const div = document.createElement('div');
-        div.className = 'msg-row' + (mine ? ' mine' : '');
-        div.innerHTML = `
-          <div class="msg-av">${av}</div>
-          <div class="msg-body">
-            <div class="msg-name">${mine ? 'Siz' : m.full_name}</div>
-            <div class="msg-bubble">${m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-            <div class="msg-time">${ts}</div>
-          </div>`;
-        box.appendChild(div);
+      const _STATIONS = {
+        'Welding': [
+          'WS-01','WS-02','WS-03','WS-04','WS-05',
+          'WS-06','WS-07','WS-08','WS-09','WS-10',
+        ],
+        'Painting': [
+          'INSPECTION','TOP-COAT','PRIMER SANDING','PRIMER-COAT',
+          'UNDERBODY COATING','SEALING','ED-SANDING','PRE-TREATMENT ELECTR (PT/ED)',
+        ],
+        'General Assembly': [
+          'CHASSIS — C-01L','CHASSIS — C-02L','CHASSIS — C-03L','CHASSIS — C-04L',
+          'CHASSIS — C-05L','CHASSIS — C-06L','CHASSIS — C-07L','CHASSIS — C-08L',
+          'CHASSIS — C-09L','CHASSIS — C-10L','CHASSIS — C-11L','CHASSIS — C-12L',
+          'CHASSIS — C-13L','CHASSIS — C-14L','CHASSIS — C-15L','CHASSIS — C-16L',
+          'CHASSIS — RIGHT',
+          'TRIM','FINAL LINE','SUB LINE',
+        ],
+      };
+
+      function updateStationSelect() {
+        const line = $('a-line') ? $('a-line').value : '';
+        const sel  = $('a-station'); if (!sel) return;
+        const opts = _STATIONS[line] || [];
+        sel.innerHTML = opts.map(s => '<option value="'+s+'">'+s+'</option>').join('');
       }
 
-      function switchRoom(room) {
-        curRoom = room;
-        document.querySelectorAll('.room-chip').forEach(c => c.classList.toggle('on', c.dataset.room === room));
-        const box = $('chat-msgs'); if (box) box.innerHTML = '';
-        if (chatSocket) chatSocket.emit('join', room);
-      }
+      function applyWatermark() {
+        const layer = $('wm-layer');
+        if (!layer || !ME) return;
+        const name = (ME.name || ME.username || '').toUpperCase();
 
-      function sendChatMsg() {
-        const inp = $('chat-inp'); if (!inp || !inp.value.trim()) return;
-        if (chatSocket) chatSocket.emit('message', { text: inp.value.trim(), room: curRoom });
-        inp.value = '';
-      }
+        function _isDark() {
+          return document.documentElement.dataset.theme === 'dark'
+            || (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme:dark)').matches);
+        }
 
-      function renderChat() {
-        const isAdmin = ME?.role === 'admin';
-        const rooms = [
-          { id: 'umumiy',    label: '#Umumiy',     icon: 'ti-world' },
-          { id: 'logistika', label: '#Logistika',  icon: 'ti-truck' },
-          { id: 'production',label: '#Production', icon: 'ti-tools' },
-          ...(isAdmin ? [{ id: 'admin', label: '#Admin', icon: 'ti-shield' }] : []),
-        ];
-        $('main-content').innerHTML = `
-          <div class="chat-wrap">
-            <div class="chat-rooms">
-              ${rooms.map(r => `<div class="room-chip${r.id===curRoom?' on':''}" data-room="${r.id}" onclick="switchRoom('${r.id}')">
-                <i class="ti ${r.icon}" style="font-size:11px;margin-right:3px"></i>${r.label}
-              </div>`).join('')}
-            </div>
-            <div class="online-bar" id="online-bar">
-              <div class="online-dot"></div><span style="font-size:10px;color:var(--txt3);font-weight:600">ONLINE:</span>
-              ${onlineList.map(u => `<span class="online-chip">${u.name.split(' ')[0]}</span>`).join('')}
-            </div>
-            <div class="chat-msgs" id="chat-msgs"></div>
-            <div class="chat-input-row">
-              <input class="chat-inp" id="chat-inp" placeholder="Xabar yozing..." autocomplete="off"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}">
-              <button class="chat-send" onclick="sendChatMsg()"><i class="ti ti-send" style="font-size:16px"></i></button>
-            </div>
-          </div>`;
-        initSocket();
-        if (chatSocket?.connected) chatSocket.emit('join', curRoom);
+        function _draw() {
+          const now = new Date();
+          const dt  = now.getFullYear()+'-'
+            +String(now.getMonth()+1).padStart(2,'0')+'-'
+            +String(now.getDate()).padStart(2,'0')+' '
+            +String(now.getHours()).padStart(2,'0')+':'
+            +String(now.getMinutes()).padStart(2,'0')+':'
+            +String(now.getSeconds()).padStart(2,'0');
+
+          const W = 280, H = 130;
+          const cv = document.createElement('canvas');
+          cv.width = W; cv.height = H;
+          const ctx = cv.getContext('2d');
+
+          const color = _isDark() ? 'rgba(255,255,255,0.07)' : 'rgba(100,116,139,0.14)';
+          ctx.save();
+          ctx.translate(W / 2, H / 2);
+          ctx.rotate(-28 * Math.PI / 180);
+          ctx.font = '700 11.5px "DM Sans",sans-serif';
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(name, 0, -9);
+          ctx.fillText(dt,   0,  9);
+          ctx.restore();
+
+          layer.style.backgroundImage  = 'url(' + cv.toDataURL() + ')';
+          layer.style.backgroundRepeat = 'repeat';
+          layer.style.backgroundSize   = W + 'px ' + H + 'px';
+        }
+
+        _draw();
+        layer.style.display = 'block';
+
+        function _clip() {
+          const app = document.getElementById('app');
+          if (!app) return;
+          const r = app.getBoundingClientRect();
+          layer.style.clipPath = 'inset(0 calc(100vw - ' + r.right + 'px) 0 ' + r.left + 'px)';
+        }
+        _clip();
+        window.addEventListener('resize', _clip);
+        setInterval(_draw, 1000);
       }
 
       renderStaticLabels();
@@ -2123,12 +3934,14 @@
           if (!r.ok) return;
           const u = await r.json();
           if (!u || !u.role) return;
-          ME = { id: u.id, username: u.username, name: u.name, role: u.role, line: u.line, roleLabel: u.roleLabel };
+          ME = { id: u.id, username: u.username, name: u.name, role: u.role, line: u.line, roleLabel: u.roleLabel, position: u.position || '', email: u.email || null };
           $('m-name').textContent = ME.name;
           updateTopbarRole();
           buildNav(); showScreen('s-main'); updateLangButtons();
+          applyWatermark();
           renderHome().then(initScrollHide);
           loadNotifications();
+          updateOfflineUI();
         } catch (_) {}
       })();
     </script>
