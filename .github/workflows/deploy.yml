@@ -14,8 +14,10 @@ jobs:
           host: playstat.uz
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
           script: |
             cd /var/www/tekshiruvnazorati.uz/app
+            git checkout -- package-lock.json
             git pull origin main
             npm install --omit=dev
             pm2 restart tekshiruvnazorati
