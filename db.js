@@ -50,6 +50,8 @@ async function initDB() {
 
     await client.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS rating INT NOT NULL DEFAULT 100;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100);
     `);
 
     await client.query(`

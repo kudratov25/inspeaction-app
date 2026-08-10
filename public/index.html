@@ -779,19 +779,6 @@
       border-color: rgba(255, 255, 255, .6)
     }
 
-    .demo-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 7px 0;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(255, 255, 255, .08)
-    }
-
-    .demo-row:last-child {
-      border-bottom: none
-    }
-
     #lightbox {
       display: none;
       position: fixed;
@@ -889,16 +876,35 @@
     }
     .notif-panel {
       position: absolute;
-      top: 100%; left: 0; right: 0;
+      top: calc(100% + 8px); right: 14px;
+      width: 340px;
+      max-width: calc(100vw - 28px);
       background: var(--surface);
-      border-bottom: 2px solid var(--border);
-      box-shadow: 0 8px 28px rgba(0,0,0,.13);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: 0 12px 32px rgba(21,101,192,.16);
       max-height: 0;
       overflow: hidden;
-      transition: max-height .3s ease;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: max-height .25s ease, opacity .18s ease, transform .18s ease;
       z-index: 200;
     }
-    .notif-panel.show { max-height: 60vh; overflow-y: auto; }
+    .notif-panel.show { max-height: 60vh; overflow-y: auto; opacity: 1; transform: translateY(0); }
+    .notif-panel-hdr {
+      position: sticky; top: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 700; color: var(--txt);
+      z-index: 1;
+    }
+    .notif-close-btn {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--txt3); cursor: pointer; transition: background .1s, color .1s;
+    }
+    .notif-close-btn:hover { background: var(--bg); color: var(--txt); }
     .notif-item {
       padding: 11px 14px;
       border-bottom: 1px solid var(--border);
@@ -994,8 +1000,8 @@
         box-shadow: none;
       }
 
-      /* s-main: sidebar + content grid */
-      #s-main {
+      /* s-main: sidebar + content grid (only when this screen is active) */
+      #s-main.active {
         display: grid;
         grid-template-columns: 220px 1fr;
         grid-template-rows: auto 1fr;
@@ -1010,6 +1016,7 @@
         grid-area: nav;
         flex-direction: column;
         align-items: stretch;
+        gap: 2px;
         border-top: none;
         border-right: 1px solid var(--border);
         height: 100vh;
@@ -1018,38 +1025,50 @@
         overflow-y: auto;
         background: var(--surface);
         transform: none !important;
-        padding-top: 8px;
+        padding: 0 10px 16px;
       }
 
       /* Sidebar logo area */
       #s-main #bottomnav::before {
         content: 'Tekshiruv Nazorat';
-        display: block;
-        font-size: 13px;
+        display: flex;
+        align-items: center;
+        min-height: 30px;
+        font-size: 13.5px;
         font-weight: 700;
-        color: var(--blue);
-        padding: 16px 20px 14px;
+        color: var(--txt);
+        background-image: url('/logo-byd.png');
+        background-repeat: no-repeat;
+        background-position: 0 center;
+        background-size: 30px auto;
+        padding: 18px 10px 16px 42px;
+        margin: 0 -10px 10px;
         border-bottom: 1px solid var(--border);
-        margin-bottom: 8px;
         letter-spacing: -.2px;
       }
 
       .navitem {
         flex: 0;
-        padding: 11px 20px;
+        padding: 10px 12px;
         text-align: left;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         border-top: none;
-        border-left: 3px solid transparent;
-        border-radius: 0;
+        border-left: none;
+        border-radius: 10px;
+        transition: background .15s ease, color .15s ease;
       }
+      .navitem i { transition: color .15s ease; }
+      #s-main .navitem:hover:not(.active) { background: var(--blue-lt); }
       .navitem.active {
         border-top: none;
-        border-left: 3px solid var(--blue);
-        background: var(--blue-lt);
+        border-left: none;
+        background: var(--blue);
+        box-shadow: 0 2px 8px rgba(21,101,192,.25);
       }
+      #s-main .navitem.active i,
+      #s-main .navitem.active span { color: #fff; }
       .navitem i  { display: inline; margin-bottom: 0; font-size: 17px; }
       .navitem span { font-size: 13px; font-weight: 500; display: inline; }
 
@@ -1069,8 +1088,7 @@
       /* Login screen: limit form width on desktop */
       #s-login { padding: 48px 24px; }
       #s-login .login-card,
-      #s-login .lang-sw,
-      #s-login #demo-section { max-width: 400px; }
+      #s-login .lang-sw { max-width: 400px; }
 
       /* Modal wider */
       .modal-box { max-width: 520px; }
@@ -1140,22 +1158,6 @@
             style="border-top-color:var(--blue-dark);border-color:rgba(21,101,192,.2)"></div>
         </button>
       </div>
-      <div id="demo-section" style="display:none;width:100%;background:rgba(255,255,255,.07);border-radius:var(--r);border:1px solid rgba(255,255,255,.12);padding:14px">
-        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);margin-bottom:8px;letter-spacing:.4px">
-          DEMO FOYDALANUVCHILAR</div>
-        <div class="demo-row" onclick="setU('shavkat','1234')"><span
-            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">shavkat / 1234</span><span
-            class="role-pill r-a">Yig'uvchi</span></div>
-        <div class="demo-row" onclick="setU('logistik','1234')"><span
-            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">logistik / 1234</span><span
-            class="role-pill r-l">Logistika</span></div>
-        <div class="demo-row" onclick="setU('production','1234')"><span
-            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">production / 1234</span><span
-            class="role-pill r-p">Production</span></div>
-        <div class="demo-row" onclick="setU('admin','admin')"><span
-            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">admin / admin</span><span
-            class="role-pill r-ad">Admin</span></div>
-      </div>
     </div>
 
     <div id="s-main" class="screen">
@@ -1192,6 +1194,10 @@
           <div id="lang-list"></div>
         </div>
         <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-hdr">
+            <span id="notif-panel-title"></span>
+            <div class="notif-close-btn" onclick="closeNotifPanel()"><i class="ti ti-x" style="font-size:14px"></i></div>
+          </div>
           <div id="notif-list" style="padding:4px 0"></div>
         </div>
       </div>
@@ -1823,7 +1829,6 @@
       }
       function showNav() { $('bottomnav').classList.remove('hidden'); }
       function toast(msg, ok = true) { const t = $('toast'); t.textContent = msg; t.style.background = ok ? '#1A2535' : 'var(--red)'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500) }
-      function setU(u, p) { $('l-user').value = u; $('l-pass').value = p }
       function spin(id, on) { $(id).style.display = on ? 'block' : 'none' }
       function closeNotifPanel() { $('notif-panel').classList.remove('show'); }
       function closeLangPanel()  { $('lang-panel').classList.remove('show'); }
@@ -2052,6 +2057,7 @@
         set('lbl-password', t('password').toUpperCase());
         set('login-btn-txt', t('login'));
         setph('l-user', t('username').toLowerCase());
+        set('notif-panel-title', t('notifTitle'));
         // detail
         set('detail-title', t('detail'));
         // add form
@@ -2892,7 +2898,7 @@
         <div style="font-size:13px;font-weight:700;color:var(--txt)"><i class="ti ti-list-numbers" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:var(--blue)"></i>${t('fullRanking')}</div>
         <button class="btn btn-sm" onclick="window.open('/api/ranking/export?lang='+LANG,'_blank')" style="border:1px solid var(--border);background:var(--bg);color:var(--txt2);padding:5px 10px;font-size:11px"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> ${t('downloadExcel')}</button>
       </div>
-      ${fullRankingHtml || `<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">${t('noIssues')}</div>`}
+      ${fullRankingHtml ? `<div style="max-height:225px;overflow-y:auto">${fullRankingHtml}</div>` : `<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">${t('noIssues')}</div>`}
     </div>
 
     <div class="det-block" style="margin-bottom:14px">
@@ -3923,10 +3929,6 @@ td{border:1px solid #ccc;padding:7px 9px;vertical-align:top;font-size:11px}
       }
 
       renderStaticLabels();
-
-      fetch('/api/config').then(r => r.json()).then(c => {
-        if (c.demo) $('demo-section').style.display = 'block';
-      }).catch(() => {});
 
       (async () => {
         try {

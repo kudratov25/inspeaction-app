@@ -1225,14 +1225,21 @@ async function archiveAndResetRating() {
 }
 
 function scheduleMonthlyRatingReset() {
+  // setTimeout 32-bitli signed int qabul qiladi (~24.8 kun chegara).
+  // Shu sababli to'g'ridan-to'g'ri "keyingi oygacha" kutish o'rniga,
+  // xavfsiz oraliqda (<=24 soat) uyg'onib, vaqt kelganini tekshiramiz.
+  const MAX_DELAY = 24 * 60 * 60 * 1000;
   const now = new Date();
   const next = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0, 0);
   const ms = next - now;
+  const delay = Math.min(ms, MAX_DELAY);
   setTimeout(async () => {
-    await archiveAndResetRating();
+    if (Date.now() >= next.getTime()) {
+      await archiveAndResetRating();
+    }
     scheduleMonthlyRatingReset();
-  }, ms);
-  console.log(`🏆 Oylik reyting arxivi ${next.toISOString()} da ishga tushadi`);
+  }, delay);
+  if (ms <= MAX_DELAY) console.log(`🏆 Oylik reyting arxivi ${next.toISOString()} da ishga tushadi`);
 }
 
 initDB().then(() => {
