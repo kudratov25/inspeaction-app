@@ -994,8 +994,8 @@
         box-shadow: none;
       }
 
-      /* s-main: sidebar + content grid */
-      #s-main {
+      /* s-main: sidebar + content grid (only when this screen is active) */
+      #s-main.active {
         display: grid;
         grid-template-columns: 220px 1fr;
         grid-template-rows: auto 1fr;
@@ -1010,6 +1010,7 @@
         grid-area: nav;
         flex-direction: column;
         align-items: stretch;
+        gap: 2px;
         border-top: none;
         border-right: 1px solid var(--border);
         height: 100vh;
@@ -1018,38 +1019,50 @@
         overflow-y: auto;
         background: var(--surface);
         transform: none !important;
-        padding-top: 8px;
+        padding: 0 10px 16px;
       }
 
       /* Sidebar logo area */
       #s-main #bottomnav::before {
         content: 'Tekshiruv Nazorat';
-        display: block;
-        font-size: 13px;
+        display: flex;
+        align-items: center;
+        min-height: 30px;
+        font-size: 13.5px;
         font-weight: 700;
-        color: var(--blue);
-        padding: 16px 20px 14px;
+        color: var(--txt);
+        background-image: url('/logo-byd.png');
+        background-repeat: no-repeat;
+        background-position: 0 center;
+        background-size: 30px auto;
+        padding: 18px 10px 16px 42px;
+        margin: 0 -10px 10px;
         border-bottom: 1px solid var(--border);
-        margin-bottom: 8px;
         letter-spacing: -.2px;
       }
 
       .navitem {
         flex: 0;
-        padding: 11px 20px;
+        padding: 10px 12px;
         text-align: left;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         border-top: none;
-        border-left: 3px solid transparent;
-        border-radius: 0;
+        border-left: none;
+        border-radius: 10px;
+        transition: background .15s ease, color .15s ease;
       }
+      .navitem i { transition: color .15s ease; }
+      #s-main .navitem:hover:not(.active) { background: var(--blue-lt); }
       .navitem.active {
         border-top: none;
-        border-left: 3px solid var(--blue);
-        background: var(--blue-lt);
+        border-left: none;
+        background: var(--blue);
+        box-shadow: 0 2px 8px rgba(21,101,192,.25);
       }
+      #s-main .navitem.active i,
+      #s-main .navitem.active span { color: #fff; }
       .navitem i  { display: inline; margin-bottom: 0; font-size: 17px; }
       .navitem span { font-size: 13px; font-weight: 500; display: inline; }
 
