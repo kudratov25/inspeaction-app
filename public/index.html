@@ -1783,7 +1783,8 @@
       }
       function back() {
         showNav(); closeNotifPanel(); closeLangPanel(); showScreen('s-main');
-        if      (curTab === 'tasks') renderAudit().then(initScrollHide);
+        if      (curTab === 'list')  renderList().then(initScrollHide);
+        else if (curTab === 'tasks') renderAudit().then(initScrollHide);
         else if (curTab === 'check') renderChecklist().then(initScrollHide);
         else                         renderHome().then(initScrollHide);
       }
@@ -2058,6 +2059,7 @@
         if (ME) updateTopbarRole();
         buildNav();
         if      (curTab === 'home')   renderHome().then(initScrollHide);
+        else if (curTab === 'list')   renderList().then(initScrollHide);
         else if (curTab === 'tasks')  renderAudit().then(initScrollHide);
         else if (curTab === 'check')  renderChecklist().then(initScrollHide);
         else if (curTab === 'profil') renderProfil();
@@ -2069,6 +2071,7 @@
         const nav = t('nav');
         const tabs = [
           { id: 'home',   icon: 'ti-layout-dashboard', label: nav.home },
+          { id: 'list',   icon: 'ti-list',              label: nav.list },
           { id: 'tasks',  icon: 'ti-clipboard-check',   label: t('tasks') },
           { id: 'check',  icon: 'ti-circle-check',      label: t('checkNav') },
           ...(isAdmin ? [{ id: 'users', icon: 'ti-users', label: nav.users }] : []),
@@ -2084,6 +2087,7 @@
         curTab = tab; buildNav(); showNav(); closeNotifPanel(); closeLangPanel();
         showScreen('s-main');
         if      (tab === 'home')   renderHome().then(initScrollHide);
+        else if (tab === 'list')   renderList().then(initScrollHide);
         else if (tab === 'tasks')  renderAudit().then(initScrollHide);
         else if (tab === 'check')  renderChecklist().then(initScrollHide);
         else if (tab === 'profil') renderProfil();
@@ -2421,6 +2425,159 @@
       function lc(line)   { return (LINE_C[line]||['#455A64','#ECEFF1','ti-list'])[0]; }
       function ll(line)   { return (LINE_C[line]||['#455A64','#ECEFF1','ti-list'])[1]; }
       function licon(line){ return (LINE_C[line]||['#455A64','#ECEFF1','ti-list'])[2]; }
+
+      let curSearch = '';
+      const collapsedLines = new Set();
+
+      function lsid(line) { return line.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+      function toggleLineSection(sid) {
+        const el = document.getElementById('ls-' + sid);
+        if (!el) return;
+        const line = el.dataset.line;
+        if (collapsedLines.has(line)) collapsedLines.delete(line);
+        else collapsedLines.add(line);
+        el.classList.toggle('collapsed', collapsedLines.has(line));
+      }
+
+      async function renderList(f) {
+        if (f !== undefined) curFilter = f;
+        const url = curSearch ? `/api/records?search=${encodeURIComponent(curSearch)}` : '/api/records';
+        const recs = await api(url); if (!recs) return;
+
+        const knownFilters = ['all','open','inprogress','closed','risky','overdue','recurring'];
+        const isLineFilter = !knownFilters.includes(curFilter);
+
+        let filtered = recs;
+        if (curFilter === 'open')            filtered = recs.filter(x => x.status === 'open');
+        else if (curFilter === 'inprogress') filtered = recs.filter(x => x.status === 'inprogress');
+        else if (curFilter === 'closed')     filtered = recs.filter(x => x.status === 'closed');
+        else if (curFilter === 'risky')      filtered = recs.filter(x => x.isRisky);
+        else if (curFilter === 'overdue')    filtered = recs.filter(x => x.isOverdue);
+        else if (curFilter === 'recurring')  filtered = recs.filter(x => x.isRecurring);
+        else if (isLineFilter)               filtered = recs.filter(x => x.line === curFilter);
+
+        const fl = t('filters');
+        const filterLabels = { all:`${fl.all} (${recs.length})`, open:fl.open, inprogress:fl.inprogress, closed:fl.closed, risky:fl.risky, overdue:fl.overdue, recurring:fl.recurring };
+
+        const statusChipsHtml = ['all','open','inprogress','closed','overdue'].map(x =>
+          `<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${filterLabels[x]||x}</div>`
+        ).join('');
+
+        let contentHtml;
+        if (isLineFilter || curSearch) {
+          contentHtml = `<div class="cards-grid" style="padding:0 14px">${[...filtered].reverse().map(r => card(r, ME.role==='admin', true)).join('')}</div>`;
+        } else {
+          const groups = {};
+          for (const r of [...filtered].reverse()) {
+            const key = r.line || '—';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(r);
+          }
+          contentHtml = Object.entries(groups).map(([line, records]) => {
+            const sid = lsid(line);
+            const isCollapsed = collapsedLines.has(line);
+            const color = lc(line), bg = ll(line), icon = licon(line);
+            return `
+            <div class="line-section${isCollapsed?' collapsed':''}" id="ls-${sid}" data-line="${line.replace(/"/g,'&quot;')}">
+              <div class="line-hdr" onclick="toggleLineSection('${sid}')" style="border-left-color:${color};background:${bg}">
+                <i class="ti ${icon} lh-icon" style="color:${color}"></i>
+                <span class="lh-name" style="color:${color}">${line}</span>
+                <span class="lh-count" style="background:${color}22;color:${color}">${records.length} ta</span>
+                <i class="ti ti-chevron-down lh-chev" style="color:${color}"></i>
+              </div>
+              <div class="line-cards cards-grid">${records.map(r => card(r, ME.role==='admin', true)).join('')}</div>
+            </div>`;
+          }).join('');
+        }
+
+        $('main-content').innerHTML = `
+    <div class="filter-row">${statusChipsHtml}</div>
+    <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center">
+      <div style="flex:1;position:relative">
+        <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txt3)"></i>
+        <input type="search" class="inp" id="list-search" value="${curSearch.replace(/"/g,'&quot;')}" placeholder="${t('searchPlaceholder')||'Qidirish...'}" style="padding-left:32px;margin:0" oninput="curSearch=this.value;renderList()">
+      </div>
+    </div>
+    <div class="export-row">
+      <div class="export-btn excel" onclick="doExport('excel')"><i class="ti ti-file-spreadsheet" style="font-size:15px"></i>${t('exportExcel')}</div>
+    </div>
+    ${contentHtml}
+    ${!filtered.length ? `<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px">${t('noRecords')}</div>` : ''}`;
+        initScrollHide();
+      }
+
+      function doExport(format) {
+        const url = `/api/export?format=${format}&lang=${LANG}&filter=${encodeURIComponent(curFilter)}`;
+        const a = document.createElement('a');
+        a.href = url; a.download = ''; a.click();
+      }
+
+      async function deleteRecord(id, event) {
+        event.stopPropagation();
+        if (!confirm(t('deleteConfirm') || "Bu yozuvni o'chirishni tasdiqlaysizmi?")) return;
+        const res = await api(`/api/records/${id}`, { method: 'DELETE' });
+        if (res && res.ok) renderHome();
+        else alert(res?.error || "O'chirishda xatolik");
+      }
+
+      function card(r, showDelete = false, hideLineName = false) {
+        const borderCls = r.isOverdue ? ' overdue-card' : r.isRisky ? ' risky-card'
+                        : r.status === 'inprogress' ? ' prog-card'
+                        : r.status === 'closed'     ? ' closed-card' : ' open-card';
+        const st   = t('status');
+        const sCls = r.status === 'open' ? 'b-open' : r.status === 'inprogress' ? 'b-inprogress' : 'b-closed';
+        const sLbl = st[r.status] || r.status;
+        const deptBadge = r.dept === 'logistics'
+          ? `<span class="c-dept-l">⚙ Logistika</span>`
+          : `<span class="c-dept-p">🏭 Ishlab chiqarish</span>`;
+        const recurBadge = r.isRecurring
+          ? `<span style="font-size:9px;font-weight:700;color:var(--purple);background:var(--purple-lt);border-radius:20px;padding:2px 6px">↺</span>` : '';
+        const delBtn = showDelete
+          ? `<button onclick="deleteRecord(${r.id},event)" style="background:none;border:none;cursor:pointer;padding:2px 5px;color:var(--red);opacity:.7;font-size:14px;line-height:1;border-radius:6px" title="O'chirish"><i class="ti ti-trash"></i></button>` : '';
+        const titleText = hideLineName ? r.station : `${r.line} · ${r.station}`;
+        let dlHtml = '';
+        if (r.deadline) {
+          if (r.status === 'closed') dlHtml = `<span class="c-dl-ok">✓ ${r.deadline}</span>`;
+          else if (r.isOverdue)      dlHtml = `<span class="c-dl-late">❗ Kechikdi · ${r.deadline}</span>`;
+          else if (r.daysLeft === 0) dlHtml = `<span class="c-dl-risk">⚠ Bugun · ${r.deadline}</span>`;
+          else if (r.isRisky)        dlHtml = `<span class="c-dl-risk">⏰ ${r.daysLeft} kun · ${r.deadline}</span>`;
+          else                       dlHtml = `<span class="c-dl-ok">📅 ${r.deadline}</span>`;
+        } else {
+          dlHtml = `<span style="font-size:11px;color:var(--txt3);opacity:.45">Muddat belgilanmagan</span>`;
+        }
+        const allMedia = (r.mediaFiles&&r.mediaFiles.length) ? r.mediaFiles
+          : [...(r.imgBefore?[{url:r.imgBefore,type:'image'}]:[]),...(r.imgAfter?[{url:r.imgAfter,type:'image'}]:[])];
+        const imgs = allMedia.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+          ${allMedia.slice(0,4).map(m=>m.type==='video'
+            ?`<div style="width:44px;height:44px;border-radius:7px;background:#111;border:1px solid var(--border);display:flex;align-items:center;justify-content:center"><i class="ti ti-player-play" style="font-size:18px;color:#fff"></i></div>`
+            :`<img src="${m.url}" style="width:44px;height:44px;border-radius:7px;object-fit:cover;border:1px solid var(--border)" onclick="event.stopPropagation();openLB('${m.url}')" alt="">`)
+          .join('')}${allMedia.length>4?`<div style="width:44px;height:44px;border-radius:7px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--txt2)">+${allMedia.length-4}</div>`:''}
+        </div>` : '';
+        return `<div class="card${borderCls}" onclick="showDetail(${r.id})">
+          <div class="c-head">
+            <span class="badge ${sCls}">${sLbl}</span>
+            <span class="type-pill ${TC[r.type]||'r-ad'}">${r.type}</span>
+            ${recurBadge}
+            <span style="flex:1"></span>
+            ${deptBadge}
+            ${delBtn}
+          </div>
+          <div class="c-body">
+            <div class="c-title">${titleText}</div>
+            <div class="c-prob">${r.problem.replace(/\n/g,' ').substring(0,90)}${r.problem.length>90?'…':''}</div>
+            ${imgs}
+          </div>
+          <div class="c-foot">
+            <div>${dlHtml}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;color:var(--txt3)">👤 ${r.auditor}</span>
+              <span style="font-size:10px;color:var(--txt3);font-family:'DM Mono',monospace">${r.date}</span>
+            </div>
+          </div>
+        </div>`;
+      }
+
       async function showDetail(id) {
         const r = await api(`/api/records/${id}`); if (!r || r.error) return;
         const me = await api('/api/me'); if (!me) return;
@@ -3324,7 +3481,8 @@ td{border:1px solid #ccc;padding:7px 9px;vertical-align:top;font-size:11px}
         if (fail) toast(`⚠ ${fail} ta qoralama yuborilmadi`, false);
         updateOfflineUI();
         loadNotifications();
-        if (curTab === 'home') renderHome().then(initScrollHide);
+        if      (curTab === 'list') renderList().then(initScrollHide);
+        else if (curTab === 'home') renderHome().then(initScrollHide);
       }
 
       window.addEventListener('online',  () => { updateOfflineUI(); syncDrafts(); });
