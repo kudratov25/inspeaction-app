@@ -2543,21 +2543,12 @@
         else if (curFilter === 'recurring')  filtered = recs.filter(x => x.isRecurring);
         else if (isLineFilter)               filtered = recs.filter(x => x.line === curFilter);
 
-        const allLines = [...new Set(recs.map(r => r.line).filter(Boolean))].sort();
         const fl = t('filters');
         const filterLabels = { all:`${fl.all} (${recs.length})`, open:fl.open, inprogress:fl.inprogress, closed:fl.closed, risky:fl.risky, overdue:fl.overdue, recurring:fl.recurring };
 
-        const statusChipsHtml = ['all','open','inprogress','closed','risky','overdue'].map(x =>
+        const statusChipsHtml = ['all','open','inprogress','closed','overdue'].map(x =>
           `<div class="chip${curFilter===x?' on':''}" onclick="renderList('${x}')">${filterLabels[x]||x}</div>`
         ).join('');
-
-        const lineChipsHtml = allLines.map(line => {
-          const attr = line.replace(/"/g,'&quot;');
-          const active = curFilter === line;
-          return `<div class="chip${active?' on':''}" data-lf="${attr}" onclick="renderList(this.dataset.lf)" style="${active?'':`border-color:${lc(line)}20`}">
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${lc(line)};margin-right:5px;vertical-align:middle"></span>${line}
-          </div>`;
-        }).join('');
 
         let contentHtml;
         if (isLineFilter || curSearch) {
@@ -2587,7 +2578,7 @@
         }
 
         $('main-content').innerHTML = `
-    <div class="filter-row">${statusChipsHtml}${lineChipsHtml}</div>
+    <div class="filter-row">${statusChipsHtml}</div>
     <div style="padding:0 14px 8px;display:flex;gap:8px;align-items:center">
       <div style="flex:1;position:relative">
         <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txt3)"></i>
