@@ -1305,7 +1305,8 @@
           <span style="font-size:15px;font-weight:600;color:var(--txt)" id="aa-modal-title">Yangi Audit muammosi</span>
           <button onclick="closeAuditAdd()" style="background:none;border:none;cursor:pointer;color:var(--txt3)"><i class="ti ti-x" style="font-size:20px"></i></button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="sec-lbl" style="padding-top:0"><i class="ti ti-map-pin" style="font-size:13px"></i><span id="aa-sec-loc">Joylashuv</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
           <div class="field" style="margin:0">
             <label id="aa-lbl-ws" style="font-size:11px">Sex/Workshop *</label>
             <input class="inp" id="aa-workshop" style="font-size:12px" placeholder="Welding, Painting...">
@@ -1319,10 +1320,16 @@
             <input class="inp" id="aa-station" style="font-size:12px" placeholder="Stansiya nomi">
           </div>
         </div>
+
+        <div class="sec-lbl"><i class="ti ti-alert-triangle" style="font-size:13px"></i><span id="aa-sec-prob">Muammo tafsiloti</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
           <div class="field" style="margin:0"><label id="aa-lbl-qc" style="font-size:11px">Savol kodi *</label><input class="inp" id="aa-qcode" placeholder="Q-001"></div>
           <div class="field" style="margin:0"><label id="aa-lbl-cat" style="font-size:11px">Muammo turi *</label><input class="inp" id="aa-category" placeholder="Sifat, Xavfsizlik..."></div>
         </div>
+        <div class="field"><label id="aa-lbl-desc" style="font-size:11px">Batafsil tavsif *</label><textarea class="inp" id="aa-desc" rows="3" placeholder="Muammoni batafsil yozing..."></textarea></div>
+        <div class="field"><label id="aa-lbl-cause" style="font-size:11px">Sabab</label><textarea class="inp" id="aa-cause" rows="2" placeholder="Muammoning kelib chiqish sababi..."></textarea></div>
+
+        <div class="sec-lbl"><i class="ti ti-user-check" style="font-size:13px"></i><span id="aa-sec-resp">Baholash va javobgarlik</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
           <div class="field" style="margin:0"><label id="aa-lbl-lv" style="font-size:11px">Daraja *</label>
             <select class="inp" id="aa-level">
@@ -1334,13 +1341,14 @@
           </div>
           <div class="field" style="margin:0"><label id="aa-lbl-dd" style="font-size:11px">Topgan bo'lim *</label><input class="inp" id="aa-disc-dept" placeholder="QC, Engineering..."></div>
         </div>
-        <div class="field"><label id="aa-lbl-desc" style="font-size:11px">Batafsil tavsif *</label><textarea class="inp" id="aa-desc" rows="3" placeholder="Muammoni batafsil yozing..."></textarea></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
           <div class="field" style="margin:0"><label id="aa-lbl-resp" style="font-size:11px">Mas'ul shaxs *</label><input class="inp" id="aa-resp" placeholder="Ism Familiya"></div>
           <div class="field" style="margin:0"><label id="aa-lbl-dl" style="font-size:11px">Yakunlash muddati *</label><input class="inp" type="date" id="aa-deadline"></div>
         </div>
+
+        <div class="sec-lbl"><i class="ti ti-photo" style="font-size:13px"></i><span id="aa-sec-media">Ilova</span></div>
         <div class="field">
-          <label id="aa-lbl-media" style="font-size:11px">Ilova (rasm/video, ixtiyoriy)</label>
+          <label id="aa-lbl-media" style="font-size:11px">Rasm/video (ixtiyoriy)</label>
           <div class="media-grid" id="aa-grid"></div>
           <input type="file" id="aa-file" accept="image/*,video/*" multiple style="display:none" onchange="addAuditMedia(this)">
         </div>
@@ -1459,9 +1467,11 @@
           auditAddTitle:"Yangi Audit muammosi",
           auditWorkshop:"Sex/Workshop", auditLine:"Liniya", auditStation:"Stansiya",
           auditQCode:"Savol kodi", auditCategory:"Muammo turi", auditLevel:"Daraja",
-          auditDiscDept:"Topgan bo'lim", auditDesc:"Batafsil tavsif",
+          auditDiscDept:"Topgan bo'lim", auditDesc:"Batafsil tavsif", auditCause:"Sabab",
           auditResp:"Mas'ul shaxs", auditDeadline:"Yakunlash muddati",
-          auditMedia:"Ilova (rasm/video, ixtiyoriy)",
+          auditMedia:"Rasm/video (ixtiyoriy)",
+          auditSecLoc:"Joylashuv", auditSecProb:"Muammo tafsiloti",
+          auditSecResp:"Baholash va javobgarlik", auditSecMedia:"Ilova",
           auditLvOpts:["Past","O'rta","Yuqori","Kritik"],
           auditEditTitle:"Tahrirlash", auditProcessLabel:"Jarayon", auditCorrLabel:"Tuzatish chorasi",
           auditProgressPh:"Bajarilgan ishlar...", auditCorrPh:"Qanday tuzatish qilindi...",
@@ -1563,9 +1573,11 @@
           auditAddTitle:"Новая проблема аудита",
           auditWorkshop:"Цех/Воркшоп", auditLine:"Линия", auditStation:"Станция",
           auditQCode:"Код вопроса", auditCategory:"Тип проблемы", auditLevel:"Уровень",
-          auditDiscDept:"Отдел обнаружения", auditDesc:"Описание проблемы",
+          auditDiscDept:"Отдел обнаружения", auditDesc:"Описание проблемы", auditCause:"Причина",
           auditResp:"Ответственный", auditDeadline:"Срок завершения",
-          auditMedia:"Прикрепить (фото/видео, необязательно)",
+          auditMedia:"Фото/видео (необязательно)",
+          auditSecLoc:"Расположение", auditSecProb:"Детали проблемы",
+          auditSecResp:"Оценка и ответственность", auditSecMedia:"Вложение",
           auditLvOpts:["Низкий","Средний","Высокий","Критический"],
           auditEditTitle:"Редактирование", auditProcessLabel:"Процесс", auditCorrLabel:"Корректирующие меры",
           auditProgressPh:"Выполненные работы...", auditCorrPh:"Что было исправлено...",
@@ -1667,9 +1679,11 @@
           auditAddTitle:"New Audit Issue",
           auditWorkshop:"Workshop", auditLine:"Line", auditStation:"Station",
           auditQCode:"Question Code", auditCategory:"Problem Category", auditLevel:"Problem Level",
-          auditDiscDept:"Discovering Department", auditDesc:"Problem Detail Description",
+          auditDiscDept:"Discovering Department", auditDesc:"Problem Detail Description", auditCause:"Cause",
           auditResp:"Responsible Person", auditDeadline:"Target Date",
-          auditMedia:"Attachment (photo/video, optional)",
+          auditMedia:"Photo/video (optional)",
+          auditSecLoc:"Location", auditSecProb:"Problem Details",
+          auditSecResp:"Assessment & Accountability", auditSecMedia:"Attachment",
           auditLvOpts:["Low","Medium","High","Critical"],
           auditEditTitle:"Edit", auditProcessLabel:"Process", auditCorrLabel:"Corrective Action",
           auditProgressPh:"Work completed...", auditCorrPh:"What was corrected...",
@@ -1995,10 +2009,13 @@
         });
         // audit add modal labels
         set('aa-modal-title', t('auditAddTitle'));
+        set('aa-sec-loc', t('auditSecLoc')); set('aa-sec-prob', t('auditSecProb'));
+        set('aa-sec-resp', t('auditSecResp')); set('aa-sec-media', t('auditSecMedia'));
         set('aa-lbl-ws',   t('auditWorkshop')+' *'); set('aa-lbl-ln', t('auditLine')+' *');
         set('aa-lbl-st',   t('auditStation')+' *');  set('aa-lbl-qc', t('auditQCode')+' *');
         set('aa-lbl-cat',  t('auditCategory')+' *'); set('aa-lbl-lv', t('auditLevel')+' *');
         set('aa-lbl-dd',   t('auditDiscDept')+' *'); set('aa-lbl-desc', t('auditDesc')+' *');
+        set('aa-lbl-cause', t('auditCause'));
         set('aa-lbl-resp', t('auditResp')+' *');     set('aa-lbl-dl', t('auditDeadline')+' *');
         set('aa-lbl-media', t('auditMedia'));         set('aa-save-txt', t('save'));
         const lvOpts = t('auditLvOpts');
@@ -2768,7 +2785,7 @@
       }
       function openAuditAdd() {
         _auditAddMf = [];
-        ['aa-workshop','aa-line','aa-station','aa-qcode','aa-category','aa-desc','aa-disc-dept','aa-resp','aa-deadline'].forEach(id => { const el=$(id); if(el) el.value=''; });
+        ['aa-workshop','aa-line','aa-station','aa-qcode','aa-category','aa-desc','aa-cause','aa-disc-dept','aa-resp','aa-deadline'].forEach(id => { const el=$(id); if(el) el.value=''; });
         if ($('aa-level')) $('aa-level').value = 'Medium';
         if ($('aa-err')) $('aa-err').textContent = '';
         renderAuditAddGrid();
@@ -2787,7 +2804,8 @@
         fd.append('workshop',ws); fd.append('line_body',ln); fd.append('station',st);
         fd.append('question_code',qc); fd.append('problem_category',cat);
         fd.append('problem_level',$('aa-level').value);
-        fd.append('description',desc); fd.append('discovery_dept',dd);
+        fd.append('description',desc); fd.append('cause',$('aa-cause').value.trim());
+        fd.append('discovery_dept',dd);
         fd.append('responsible_person',resp); fd.append('target_date',dl);
         _auditAddMf.forEach(f => fd.append('auditMedia',f));
         const res = await fetch('/api/audit', { method:'POST', body:fd });
@@ -2838,6 +2856,11 @@
           <div class="det-block" style="margin-bottom:10px">
             <div class="dl" style="margin-bottom:5px">${t('auditDesc')}</div>
             <div class="dv" style="white-space:pre-line;line-height:1.6">${r.description}</div>
+          </div>
+
+          <div class="det-block" style="margin-bottom:10px">
+            <div class="dl" style="margin-bottom:5px">${t('auditCause')}</div>
+            <div class="dv" style="white-space:pre-line;line-height:1.6">${r.cause||'—'}</div>
           </div>
 
           ${!isClosed ? `
@@ -2935,6 +2958,7 @@ td{border:1px solid #ccc;padding:7px 9px;vertical-align:top;font-size:11px}
   <td colspan="2"><div class="lb">Yakunlash muddati</div><div class="vl">${r.targetDate?String(r.targetDate).slice(0,10):'—'}</div></td>
 </tr>
 <tr><td colspan="4"><div class="lb">Muammo tavsifi</div><div class="vl" style="white-space:pre-line;line-height:1.6">${r.description}</div></td></tr>
+<tr><td colspan="4"><div class="lb">Sabab</div><div class="vl" style="white-space:pre-line;line-height:1.6">${r.cause||'—'}</div></td></tr>
 <tr><td colspan="4"><div class="lb">Tuzatish jarayoni</div><div class="vl" style="white-space:pre-line">${r.progress||'—'}</div></td></tr>
 <tr><td colspan="4"><div class="lb">Tuzatish chorasi</div><div class="vl" style="white-space:pre-line">${r.correctiveAction||'—'}</div></td></tr>
 <tr>

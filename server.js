@@ -689,6 +689,7 @@ function auditToClient(r) {
     problemCategory: r.problem_category || '',
     problemLevel: r.problem_level || 'Medium',
     description: r.description,
+    cause: r.cause || '',
     discoveryDept: r.discovery_dept || '',
     responsiblePerson: r.responsible_person || '',
     targetDate: r.target_date ? (r.target_date instanceof Date ? r.target_date.toISOString().slice(0,10) : String(r.target_date).slice(0,10)) : null,
@@ -716,7 +717,7 @@ app.get('/api/audit/export', auth, async (req, res) => {
     // BYD Template 1: 工艺纪律检查问题清单
     const STATUS_UZ = { open:'Ochiq', processing:'Jarayonda', pending_verification:'Tekshirishda', closed:'Yopilgan', overdue:'Kechikkan' };
     const LEVEL_UZ  = { Low:'Past', Medium:"O'rta", High:'Yuqori', Critical:'Kritik' };
-    const COLS = 13;
+    const COLS = 14;
 
     const title1 = Array(COLS).fill(''); title1[0] = '工艺纪律检查问题清单';
     const title2 = Array(COLS).fill(''); title2[0] = "Jarayon intizomini tekshirish bo'yicha savollar ro'yxati";
@@ -725,6 +726,7 @@ app.get('/api/audit/export', auth, async (req, res) => {
       '检查日期\nTekshirish sanasi',
       '工序/岗位/设备/设施\nJarayon/lavozim/uskunalar',
       '问题描述\nMuammo tavsifi',
+      '原因\nSabab',
       '问题分级\nMuammo Tasnifi',
       '问题状态\nMuammo holati',
       '整改期限\nTuzatish Oxirgi muddat',
@@ -744,6 +746,7 @@ app.get('/api/audit/export', auth, async (req, res) => {
         r.created_at ? r.created_at.toISOString().slice(0,10) : '',
         [r.workshop, r.line_body, r.station].filter(Boolean).join(' / '),
         r.description || '',
+        r.cause || '',
         LEVEL_UZ[r.problem_level] || r.problem_level || '',
         STATUS_UZ[st] || st,
         r.target_date ? String(r.target_date).slice(0,10) : '',
@@ -759,11 +762,11 @@ app.get('/api/audit/export', auth, async (req, res) => {
 
     const signRow = Array(COLS).fill('');
     signRow[0] = '审核人员签字 / Auditor imzosi:';
-    signRow[10] = '使用部门：制造工程部';
+    signRow[11] = '使用部门：制造工程部';
     const formRow = Array(COLS).fill('');
-    formRow[10] = 'Texnologiyalar departamenti';
-    formRow[11] = '表单编号：';
-    formRow[12] = 'FM-WI-C04-UZ-02-11-01A';
+    formRow[11] = 'Texnologiyalar departamenti';
+    formRow[12] = '表单编号：';
+    formRow[13] = 'FM-WI-C04-UZ-02-11-01A';
 
     const aoa = [title1, title2, headers, ...dataRows, signRow, formRow];
     const ws  = XLSX.utils.aoa_to_sheet(aoa);
@@ -772,7 +775,7 @@ app.get('/api/audit/export', auth, async (req, res) => {
       { s:{r:1,c:0}, e:{r:1,c:COLS-1} },
     ];
     ws['!cols'] = [
-      {wch:6},{wch:14},{wch:22},{wch:28},{wch:14},{wch:14},
+      {wch:6},{wch:14},{wch:22},{wch:28},{wch:22},{wch:14},{wch:14},
       {wch:14},{wch:16},{wch:28},{wch:14},{wch:16},{wch:14},{wch:12}
     ];
     const rowH = [{hpt:32},{hpt:20},{hpt:44}];
@@ -971,7 +974,7 @@ app.get('/api/audit/:id', auth, async (req, res) => {
 app.post('/api/audit', auth, upload.fields([{ name: 'auditMedia', maxCount: 10 }]), async (req, res) => {
   try {
     const u = req.session.user;
-    const { question_code, workshop, line_body, station, problem_category, problem_level, description, discovery_dept, responsible_person, target_date } = req.body;
+    const { question_code, workshop, line_body, station, problem_category, problem_level, description, cause, discovery_dept, responsible_person, target_date } = req.body;
     if (!workshop?.trim() || !line_body?.trim() || !station?.trim() || !description?.trim() || !problem_category?.trim() || !responsible_person?.trim()) {
       return res.status(400).json({ error: "Majburiy maydonlarni to'ldiring" });
     }
@@ -980,9 +983,9 @@ app.post('/api/audit', auth, upload.fields([{ name: 'auditMedia', maxCount: 10 }
     }
     const mf = (req.files?.auditMedia || []).map(f => ({ url: '/uploads/'+f.filename, type: f.mimetype.startsWith('video/')?'video':'image' }));
     const { rows } = await pool.query(
-      `INSERT INTO audit_issues (question_code,workshop,line_body,station,problem_category,problem_level,description,discovery_dept,responsible_person,target_date,added_by,media_files)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-      [question_code||null, workshop.trim(), line_body.trim(), station.trim(), problem_category.trim(), problem_level||'Medium', description.trim(), discovery_dept||null, responsible_person.trim(), target_date||null, u.username, JSON.stringify(mf)]
+      `INSERT INTO audit_issues (question_code,workshop,line_body,station,problem_category,problem_level,description,cause,discovery_dept,responsible_person,target_date,added_by,media_files)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [question_code||null, workshop.trim(), line_body.trim(), station.trim(), problem_category.trim(), problem_level||'Medium', description.trim(), cause?.trim()||null, discovery_dept||null, responsible_person.trim(), target_date||null, u.username, JSON.stringify(mf)]
     );
     notifyByEmail('new_audit', { workshop: workshop.trim(), line_body: line_body.trim(), station: station.trim(), description: description.trim(), responsible_person: responsible_person.trim(), target_date: target_date||null });
     res.json(auditToClient(rows[0]));
@@ -997,7 +1000,7 @@ app.patch('/api/audit/:id', auth, async (req, res) => {
     if (ex.rows[0].status === 'closed' && u.role !== 'admin') {
       return res.status(403).json({ error: 'Yopilgan muammoni tahrirlash mumkin emas' });
     }
-    const { status, progress, corrective_action, responsible_person, target_date, description } = req.body;
+    const { status, progress, corrective_action, responsible_person, target_date, description, cause } = req.body;
     const sets = ['updated_at = NOW()']; const vals = [];
     if (status !== undefined)             { vals.push(status);                sets.push(`status = $${vals.length}`); }
     if (progress !== undefined)           { vals.push(progress||'');          sets.push(`progress = $${vals.length}`); }
@@ -1005,6 +1008,7 @@ app.patch('/api/audit/:id', auth, async (req, res) => {
     if (responsible_person !== undefined) { vals.push(responsible_person||null); sets.push(`responsible_person = $${vals.length}`); }
     if (target_date !== undefined)        { vals.push(target_date||null);     sets.push(`target_date = $${vals.length}`); }
     if (description !== undefined)        { vals.push(description);           sets.push(`description = $${vals.length}`); }
+    if (cause !== undefined)              { vals.push(cause||null);           sets.push(`cause = $${vals.length}`); }
     if (status === 'closed')              { vals.push(u.username);            sets.push(`closed_by = $${vals.length}`); }
     vals.push(req.params.id);
     const { rows } = await pool.query(`UPDATE audit_issues SET ${sets.join(',')} WHERE id = $${vals.length} RETURNING *`, vals);

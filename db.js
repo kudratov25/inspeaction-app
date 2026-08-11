@@ -95,6 +95,7 @@ async function initDB() {
       );
       CREATE INDEX IF NOT EXISTS idx_audit_status ON audit_issues(status);
       CREATE INDEX IF NOT EXISTS idx_audit_workshop ON audit_issues(workshop);
+      ALTER TABLE audit_issues ADD COLUMN IF NOT EXISTS cause TEXT;
     `);
 
     await client.query(`
