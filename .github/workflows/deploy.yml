@@ -16,9 +16,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
           script: |
-            cd /var/www/tekshiruvnazorati.uz/app
-            git checkout -- package-lock.json
-            git pull origin main
+            cd /var/www/inspection-app
+            git fetch origin main
+            git reset --hard origin/main
             npm install --omit=dev
-            pm2 restart tekshiruvnazorati
+            pm2 restart inspection-app
             echo "✅ Deploy done: $(date)"

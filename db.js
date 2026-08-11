@@ -45,48 +45,7 @@ async function initDB() {
       ALTER TABLE records ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false;
       ALTER TABLE records ADD COLUMN IF NOT EXISTS resolved_by VARCHAR(50);
       ALTER TABLE records ADD COLUMN IF NOT EXISTS media_files TEXT DEFAULT '[]';
-      ALTER TABLE records ADD COLUMN IF NOT EXISTS rating_penalized BOOLEAN DEFAULT false;
     `);
-
-    await client.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS rating INT NOT NULL DEFAULT 100;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100);
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS rating_history (
-        id SERIAL PRIMARY KEY,
-        month VARCHAR(7) NOT NULL,
-        rank INT NOT NULL,
-        username VARCHAR(50) NOT NULL,
-        full_name VARCHAR(100) NOT NULL,
-        role VARCHAR(20),
-        line VARCHAR(50),
-        rating INT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-      CREATE INDEX IF NOT EXISTS idx_rating_history_month ON rating_history(month);
-    `);
-
-    // Mavjud (allaqachon seedlangan) bazalar uchun: agar reyting hali umuman
-    // ishlatilmagan bo'lsa (hech kim jarima olmagan, hech qanday oylik arxiv yo'q),
-    // demo ballarni bir martalik qo'yib beramiz — shunda reyting bo'limi bo'sh emas ko'rinadi.
-    const demoRatings = { shavkat: 100, admin: 96, mirzohid: 88, husan: 79, maruf: 65, production: 52, logistik: 35 };
-    const demoUsernames = Object.keys(demoRatings);
-    const { rows: histRows } = await client.query('SELECT 1 FROM rating_history LIMIT 1');
-    if (histRows.length === 0) {
-      const { rows: curRatings } = await client.query(
-        'SELECT username, rating FROM users WHERE username = ANY($1::text[])',
-        [demoUsernames]
-      );
-      if (curRatings.length === demoUsernames.length && curRatings.every(r => r.rating === 100)) {
-        for (const [uname, val] of Object.entries(demoRatings)) {
-          await client.query('UPDATE users SET rating = $1 WHERE username = $2', [val, uname]);
-        }
-        console.log('🏆 Namuna reytinglar qo\'yildi (bir martalik demo)');
-      }
-    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (
@@ -190,18 +149,18 @@ async function initDB() {
     if (rowCount === 0) {
       const bcrypt = require('bcryptjs');
       const users = [
-        ['shavkat',    await bcrypt.hash('1234', 10),  'Shavkat T.',    'assembler',  'Trim',       100],
-        ['husan',      await bcrypt.hash('1234', 10),  'Husan U.',      'assembler',  'Chassis',    79],
-        ['mirzohid',   await bcrypt.hash('1234', 10),  'Mirzohid K.',   'assembler',  'Trim',       88],
-        ['maruf',      await bcrypt.hash('1234', 10),  'Maruf B.',      'assembler',  'Final',      65],
-        ['logistik',   await bcrypt.hash('1234', 10),  'Logistik U.',   'logistics',  'Logistika',  35],
-        ['production', await bcrypt.hash('1234', 10),  'Production M.', 'production', 'Production', 52],
-        ['admin',      await bcrypt.hash('admin', 10), 'Admin',         'admin',      'Boshqaruv',  96],
+        ['shavkat',    await bcrypt.hash('1234', 10),  'Shavkat T.',    'assembler',  'Trim'],
+        ['husan',      await bcrypt.hash('1234', 10),  'Husan U.',      'assembler',  'Chassis'],
+        ['mirzohid',   await bcrypt.hash('1234', 10),  'Mirzohid K.',   'assembler',  'Trim'],
+        ['maruf',      await bcrypt.hash('1234', 10),  'Maruf B.',      'assembler',  'Final'],
+        ['logistik',   await bcrypt.hash('1234', 10),  'Logistik U.',   'logistics',  'Logistika'],
+        ['production', await bcrypt.hash('1234', 10),  'Production M.', 'production', 'Production'],
+        ['admin',      await bcrypt.hash('admin', 10), 'Admin',         'admin',      'Boshqaruv'],
       ];
-      for (const [u, h, n, r, l, rating] of users) {
+      for (const [u, h, n, r, l] of users) {
         await client.query(
-          'INSERT INTO users (username, password_hash, full_name, role, line, rating) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING',
-          [u, h, n, r, l, rating]
+          'INSERT INTO users (username, password_hash, full_name, role, line) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',
+          [u, h, n, r, l]
         );
       }
 

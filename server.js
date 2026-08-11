@@ -138,18 +138,6 @@ const ROLES = {
   admin:      { label: 'Admin',     canAdd: true, canClose: true, canAction: true, filter: 'all' },
 };
 
-// ─── Rating: penalize a user for missing a deadline ─────────────
-const RATING_PENALTY = 5;
-async function penalizeRating(username, points = RATING_PENALTY) {
-  if (!username) return;
-  try {
-    await pool.query(
-      'UPDATE users SET rating = GREATEST(0, rating - $1) WHERE username = $2',
-      [points, username]
-    );
-  } catch (e) { console.error('Rating penalty error:', e.message); }
-}
-
 // ─── Login rate limiting ───────────────────────────────────────
 const loginAttempts = new Map();
 
@@ -209,10 +197,9 @@ app.post('/api/login', loginRateLimit, async (req, res) => {
 app.post('/api/logout', (req, res) => { req.session.destroy(); res.json({ ok: true }); });
 app.get('/logout', (req, res) => { req.session.destroy(() => res.redirect('/')); });
 
-app.get('/api/me', auth, async (req, res) => {
+app.get('/api/me', auth, (req, res) => {
   const u = req.session.user;
-  const { rows } = await pool.query('SELECT rating FROM users WHERE username = $1', [u.username]);
-  res.json({ ...u, rating: rows[0]?.rating ?? 100, roleLabel: ROLES[u.role]?.label, roleCfg: ROLES[u.role] });
+  res.json({ ...u, roleLabel: ROLES[u.role]?.label, roleCfg: ROLES[u.role] });
 });
 
 app.post('/api/me/password', auth, async (req, res) => {
@@ -365,12 +352,10 @@ app.patch('/api/records/:id', auth, async (req, res) => {
     const rc = ROLES[u.role];
     if (!rc?.canAction) return res.status(403).json({ error: 'Ruxsat yo\'q' });
     const { status, action, deadline, is_recurring } = req.body;
-    let existing = null;
     if (status === 'closed') {
-      const ex = await pool.query('SELECT action, deadline, added_by, rating_penalized FROM records WHERE id = $1', [req.params.id]);
+      const ex = await pool.query('SELECT action FROM records WHERE id = $1', [req.params.id]);
       if (!ex.rows.length) return res.status(404).json({ error: 'Topilmadi' });
-      existing = ex.rows[0];
-      const finalAction = action?.trim() || existing.action;
+      const finalAction = action?.trim() || ex.rows[0].action;
       if (!finalAction || finalAction === '—' || !finalAction.trim()) {
         return res.status(400).json({ error: 'Yopish uchun harakat rejasi kiritilishi shart' });
       }
@@ -382,14 +367,9 @@ app.patch('/api/records/:id', auth, async (req, res) => {
     if (deadline !== undefined)     { vals.push(deadline || null); sets.push(`deadline = $${vals.length}`); }
     if (is_recurring !== undefined) { vals.push(is_recurring);  sets.push(`is_recurring = $${vals.length}`); }
     if (status === 'closed')        { vals.push(u.username);    sets.push(`resolved_by = $${vals.length}`); }
-    // Closed after its deadline had already passed → the responsible user's rating takes a hit
-    const closedLate = status === 'closed' && existing?.deadline && !existing.rating_penalized
-      && String(existing.deadline).slice(0, 10) < new Date().toISOString().slice(0, 10);
-    if (closedLate) { vals.push(true); sets.push(`rating_penalized = $${vals.length}`); }
     vals.push(req.params.id);
     const { rows } = await pool.query(`UPDATE records SET ${sets.join(',')} WHERE id = $${vals.length} RETURNING *`, vals);
     if (!rows.length) return res.status(404).json({ error: 'Topilmadi' });
-    if (closedLate) await penalizeRating(existing.added_by);
     if (status === 'closed') {
       const r = rows[0];
       notifyByEmail('record_closed', { id: r.id, line: r.line, station: r.station, closedBy: u.full_name, action: r.action });
@@ -458,7 +438,7 @@ app.get('/api/stats', auth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 app.get('/api/users', auth, async (req, res) => {
   if (req.session.user.role !== 'admin') return res.status(403).json({ error: 'Faqat admin' });
-  const { rows } = await pool.query('SELECT id,username,full_name,role,line,email,rating,created_at FROM users ORDER BY id');
+  const { rows } = await pool.query('SELECT id,username,full_name,role,line,email,created_at FROM users ORDER BY id');
   res.json(rows);
 });
 
@@ -507,87 +487,6 @@ app.delete('/api/users/:id', auth, async (req, res) => {
   if (+req.params.id === req.session.user.id) return res.status(400).json({ error: 'O\'zingizni o\'chira olmaysiz' });
   await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
   res.json({ ok: true });
-});
-
-// ══════════════════════════════════════════════════════════════
-//  Rating / ranking
-// ══════════════════════════════════════════════════════════════
-app.get('/api/ranking', auth, async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT username, full_name, role, line, rating FROM users ORDER BY rating DESC, full_name ASC'
-    );
-    res.json(rows.map((r, i) => ({ rank: i + 1, ...r })));
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Server xatosi' }); }
-});
-
-app.get('/api/ranking/history', auth, async (req, res) => {
-  try {
-    let month = req.query.month;
-    if (!month) {
-      const { rows: last } = await pool.query('SELECT month FROM rating_history ORDER BY month DESC LIMIT 1');
-      month = last[0]?.month || null;
-    }
-    if (!month) return res.json({ month: null, rows: [] });
-    const { rows } = await pool.query(
-      'SELECT rank, username, full_name, role, line, rating FROM rating_history WHERE month = $1 ORDER BY rank ASC',
-      [month]
-    );
-    res.json({ month, rows });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Server xatosi' }); }
-});
-
-const RANKING_I18N = {
-  uz: { title: 'Reyting', headers: ['O\'rin', 'F.I.Sh', 'Foydalanuvchi', 'Rol', 'Liniya', 'Reyting'] },
-  ru: { title: 'Рейтинг', headers: ['Место', 'Ф.И.О', 'Логин', 'Роль', 'Линия', 'Рейтинг'] },
-  en: { title: 'Ranking', headers: ['Rank', 'Full name', 'Username', 'Role', 'Line', 'Rating'] },
-};
-
-app.get('/api/ranking/export', auth, async (req, res) => {
-  try {
-    const lang = ['uz', 'ru', 'en'].includes(req.query.lang) ? req.query.lang : 'uz';
-    const tr = RANKING_I18N[lang];
-    const { rows } = await pool.query(
-      'SELECT username, full_name, role, line, rating FROM users ORDER BY rating DESC, full_name ASC'
-    );
-    const data = [
-      tr.headers,
-      ...rows.map((r, i) => [i + 1, r.full_name, r.username, ROLES[r.role]?.label || r.role, r.line || '—', r.rating]),
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [8, 26, 16, 14, 14, 10].map(w => ({ wch: w }));
-    tr.headers.forEach((_, ci) => {
-      const cell = XLSX.utils.encode_cell({ r: 0, c: ci });
-      if (!ws[cell]) return;
-      ws[cell].s = {
-        font:      { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
-        fill:      { patternType: 'solid', fgColor: { rgb: '1565C0' } },
-        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-        border:    { top:{style:'thin',color:{rgb:'CCCCCC'}}, bottom:{style:'thin',color:{rgb:'CCCCCC'}}, left:{style:'thin',color:{rgb:'CCCCCC'}}, right:{style:'thin',color:{rgb:'CCCCCC'}} },
-      };
-    });
-    rows.forEach((r, ri) => {
-      const rowIdx = ri + 1;
-      const medalBg = ri === 0 ? 'FFF9C4' : ri === 1 ? 'F1F1F1' : ri === 2 ? 'FFE0B2' : (ri % 2 === 0 ? 'FFFFFF' : 'F5F8FF');
-      for (let ci = 0; ci < tr.headers.length; ci++) {
-        const cell = XLSX.utils.encode_cell({ r: rowIdx, c: ci });
-        if (!ws[cell]) ws[cell] = { t: 's', v: '' };
-        ws[cell].s = {
-          fill:      { patternType: 'solid', fgColor: { rgb: medalBg } },
-          font:      { sz: 10, color: { rgb: '1A2535' }, bold: ci === 0 },
-          alignment: { vertical: 'middle', horizontal: ci === 0 || ci === 5 ? 'center' : 'left' },
-          border:    { top:{style:'thin',color:{rgb:'E0E7EF'}}, bottom:{style:'thin',color:{rgb:'E0E7EF'}}, left:{style:'thin',color:{rgb:'E0E7EF'}}, right:{style:'thin',color:{rgb:'E0E7EF'}} },
-        };
-      }
-    });
-    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: tr.headers.length - 1 } });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, tr.title.substring(0, 31));
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', cellStyles: true });
-    res.setHeader('Content-Disposition', `attachment; filename="reyting-${Date.now()}.xlsx"`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buf);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Export xatosi: ' + e.message }); }
 });
 
 // ─── Helper ────────────────────────────────────────────────────
@@ -1164,88 +1063,15 @@ function scheduleDeadlineCheck() {
         }
       }
       console.log(`⏰ Deadline check: ${rows.length} ta eslatma yuborildi`);
-
-      // Muddati o'tgan, hali yopilmagan va jarima berilmagan muammolar uchun reytingni pasaytirish
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const { rows: overdue } = await pool.query(
-        `SELECT id, added_by FROM records
-         WHERE status != 'closed' AND deadline IS NOT NULL AND deadline < $1 AND rating_penalized = false`,
-        [todayStr]
-      );
-      for (const r of overdue) {
-        await penalizeRating(r.added_by);
-        await pool.query('UPDATE records SET rating_penalized = true WHERE id = $1', [r.id]);
-      }
-      if (overdue.length) console.log(`⏰ Rating jarimasi: ${overdue.length} ta muammo uchun`);
     } catch (e) { console.error('Deadline check error:', e.message); }
     scheduleDeadlineCheck();
   }, ms);
   console.log(`⏰ Deadline check ${Math.round(ms/60000)} daqiqadan keyin ishga tushadi`);
 }
 
-// ── Oylik reyting: har oyning 1-kuni 00:05 da arxivlanadi va qayta boshlanadi ──
-function monthLabel(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
-
-async function archiveAndResetRating() {
-  const client = await pool.connect();
-  try {
-    const month = monthLabel(new Date(Date.now() - 86400000)); // yakunlangan oy
-    const { rows } = await client.query('SELECT username, full_name, role, line, rating FROM users ORDER BY rating DESC, full_name ASC');
-    await client.query('BEGIN');
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      await client.query(
-        'INSERT INTO rating_history (month, rank, username, full_name, role, line, rating) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-        [month, i + 1, r.username, r.full_name, r.role, r.line, r.rating]
-      );
-    }
-    await client.query('UPDATE users SET rating = 100');
-    await client.query('COMMIT');
-    console.log(`🏆 Oylik reyting arxivlandi (${month}), ${rows.length} ta foydalanuvchi qayta 100 ball bilan boshladi`);
-
-    const top3 = rows.slice(0, 3);
-    if (top3.length) {
-      const { rows: admins } = await client.query('SELECT email FROM users WHERE role = \'admin\' AND email IS NOT NULL');
-      const medals = ['🥇','🥈','🥉'];
-      const listHtml = top3.map((r, i) => `<tr><td style="padding:6px">${medals[i]||''} ${r.full_name}</td><td style="padding:6px;font-weight:bold">${r.rating}</td></tr>`).join('');
-      for (const a of admins) {
-        await sendMail({
-          to: a.email,
-          subject: `🏆 ${month} oyi reytingi — g'oliblarni rag'batlantirish vaqti`,
-          html: `<div style="font-family:Arial;padding:20px"><h2 style="color:#E65100">🏆 ${month} oyi eng yuqori reytingli xodimlari</h2><table style="border-collapse:collapse">${listHtml}</table><p style="color:#666;margin-top:12px">Ushbu xodimlarni rag'batlantirishni unutmang.</p></div>`
-        });
-      }
-    }
-  } catch (e) {
-    await client.query('ROLLBACK');
-    console.error('Rating arxivlash xatosi:', e.message);
-  } finally {
-    client.release();
-  }
-}
-
-function scheduleMonthlyRatingReset() {
-  // setTimeout 32-bitli signed int qabul qiladi (~24.8 kun chegara).
-  // Shu sababli to'g'ridan-to'g'ri "keyingi oygacha" kutish o'rniga,
-  // xavfsiz oraliqda (<=24 soat) uyg'onib, vaqt kelganini tekshiramiz.
-  const MAX_DELAY = 24 * 60 * 60 * 1000;
-  const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 5, 0, 0);
-  const ms = next - now;
-  const delay = Math.min(ms, MAX_DELAY);
-  setTimeout(async () => {
-    if (Date.now() >= next.getTime()) {
-      await archiveAndResetRating();
-    }
-    scheduleMonthlyRatingReset();
-  }, delay);
-  if (ms <= MAX_DELAY) console.log(`🏆 Oylik reyting arxivi ${next.toISOString()} da ishga tushadi`);
-}
-
 initDB().then(() => {
   server.listen(PORT, () => console.log(`✅  Running on http://localhost:${PORT}`));
   scheduleDeadlineCheck();
-  scheduleMonthlyRatingReset();
 }).catch(err => {
   console.error('❌  DB init failed:', err.message);
   process.exit(1);

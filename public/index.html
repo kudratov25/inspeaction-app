@@ -779,6 +779,19 @@
       border-color: rgba(255, 255, 255, .6)
     }
 
+    .demo-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .demo-row:last-child {
+      border-bottom: none
+    }
+
     #lightbox {
       display: none;
       position: fixed;
@@ -876,35 +889,16 @@
     }
     .notif-panel {
       position: absolute;
-      top: calc(100% + 8px); right: 14px;
-      width: 340px;
-      max-width: calc(100vw - 28px);
+      top: 100%; left: 0; right: 0;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r);
-      box-shadow: 0 12px 32px rgba(21,101,192,.16);
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 8px 28px rgba(0,0,0,.13);
       max-height: 0;
       overflow: hidden;
-      opacity: 0;
-      transform: translateY(-6px);
-      transition: max-height .25s ease, opacity .18s ease, transform .18s ease;
+      transition: max-height .3s ease;
       z-index: 200;
     }
-    .notif-panel.show { max-height: 60vh; overflow-y: auto; opacity: 1; transform: translateY(0); }
-    .notif-panel-hdr {
-      position: sticky; top: 0;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px; background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      font-size: 13px; font-weight: 700; color: var(--txt);
-      z-index: 1;
-    }
-    .notif-close-btn {
-      width: 24px; height: 24px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--txt3); cursor: pointer; transition: background .1s, color .1s;
-    }
-    .notif-close-btn:hover { background: var(--bg); color: var(--txt); }
+    .notif-panel.show { max-height: 60vh; overflow-y: auto; }
     .notif-item {
       padding: 11px 14px;
       border-bottom: 1px solid var(--border);
@@ -1000,8 +994,8 @@
         box-shadow: none;
       }
 
-      /* s-main: sidebar + content grid (only when this screen is active) */
-      #s-main.active {
+      /* s-main: sidebar + content grid */
+      #s-main {
         display: grid;
         grid-template-columns: 220px 1fr;
         grid-template-rows: auto 1fr;
@@ -1016,7 +1010,6 @@
         grid-area: nav;
         flex-direction: column;
         align-items: stretch;
-        gap: 2px;
         border-top: none;
         border-right: 1px solid var(--border);
         height: 100vh;
@@ -1025,50 +1018,38 @@
         overflow-y: auto;
         background: var(--surface);
         transform: none !important;
-        padding: 0 10px 16px;
+        padding-top: 8px;
       }
 
       /* Sidebar logo area */
       #s-main #bottomnav::before {
         content: 'Tekshiruv Nazorat';
-        display: flex;
-        align-items: center;
-        min-height: 30px;
-        font-size: 13.5px;
+        display: block;
+        font-size: 13px;
         font-weight: 700;
-        color: var(--txt);
-        background-image: url('/logo-byd.png');
-        background-repeat: no-repeat;
-        background-position: 0 center;
-        background-size: 30px auto;
-        padding: 18px 10px 16px 42px;
-        margin: 0 -10px 10px;
+        color: var(--blue);
+        padding: 16px 20px 14px;
         border-bottom: 1px solid var(--border);
+        margin-bottom: 8px;
         letter-spacing: -.2px;
       }
 
       .navitem {
         flex: 0;
-        padding: 10px 12px;
+        padding: 11px 20px;
         text-align: left;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         border-top: none;
-        border-left: none;
-        border-radius: 10px;
-        transition: background .15s ease, color .15s ease;
+        border-left: 3px solid transparent;
+        border-radius: 0;
       }
-      .navitem i { transition: color .15s ease; }
-      #s-main .navitem:hover:not(.active) { background: var(--blue-lt); }
       .navitem.active {
         border-top: none;
-        border-left: none;
-        background: var(--blue);
-        box-shadow: 0 2px 8px rgba(21,101,192,.25);
+        border-left: 3px solid var(--blue);
+        background: var(--blue-lt);
       }
-      #s-main .navitem.active i,
-      #s-main .navitem.active span { color: #fff; }
       .navitem i  { display: inline; margin-bottom: 0; font-size: 17px; }
       .navitem span { font-size: 13px; font-weight: 500; display: inline; }
 
@@ -1088,7 +1069,8 @@
       /* Login screen: limit form width on desktop */
       #s-login { padding: 48px 24px; }
       #s-login .login-card,
-      #s-login .lang-sw { max-width: 400px; }
+      #s-login .lang-sw,
+      #s-login #demo-section { max-width: 400px; }
 
       /* Modal wider */
       .modal-box { max-width: 520px; }
@@ -1158,6 +1140,22 @@
             style="border-top-color:var(--blue-dark);border-color:rgba(21,101,192,.2)"></div>
         </button>
       </div>
+      <div id="demo-section" style="display:none;width:100%;background:rgba(255,255,255,.07);border-radius:var(--r);border:1px solid rgba(255,255,255,.12);padding:14px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);margin-bottom:8px;letter-spacing:.4px">
+          DEMO FOYDALANUVCHILAR</div>
+        <div class="demo-row" onclick="setU('shavkat','1234')"><span
+            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">shavkat / 1234</span><span
+            class="role-pill r-a">Yig'uvchi</span></div>
+        <div class="demo-row" onclick="setU('logistik','1234')"><span
+            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">logistik / 1234</span><span
+            class="role-pill r-l">Logistika</span></div>
+        <div class="demo-row" onclick="setU('production','1234')"><span
+            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">production / 1234</span><span
+            class="role-pill r-p">Production</span></div>
+        <div class="demo-row" onclick="setU('admin','admin')"><span
+            style="font-size:12px;color:#fff;font-family:'DM Mono',monospace">admin / admin</span><span
+            class="role-pill r-ad">Admin</span></div>
+      </div>
     </div>
 
     <div id="s-main" class="screen">
@@ -1194,10 +1192,6 @@
           <div id="lang-list"></div>
         </div>
         <div class="notif-panel" id="notif-panel">
-          <div class="notif-panel-hdr">
-            <span id="notif-panel-title"></span>
-            <div class="notif-close-btn" onclick="closeNotifPanel()"><i class="ti ti-x" style="font-size:14px"></i></div>
-          </div>
           <div id="notif-list" style="padding:4px 0"></div>
         </div>
       </div>
@@ -1576,10 +1570,6 @@
           profPassChanged:"Parol muvaffaqiyatli o'zgartirildi ✓",
           profResolution:"Hal qilish ko'rsatkichi",
           closedOfTotal:(c,t)=>`${c} ta yopilgan / ${t} ta jami`,
-          profRating:"Reyting", ratingLbl:"Reyting",
-          ratingHint:"Muddatida yopilmagan muammolar uchun reyting pasayadi",
-          topRating:"TOP-5 reyting", fullRanking:"To'liq reyting", seeAll:"Barchasi",
-          youLbl:"siz", downloadExcel:"Excel",
           totalIssues:"Umumiy muammolar", overallStatus:"Umumiy holat",
           closedPct:"yopilgan", overdueLbl:"Kechikkan",
           deptRanking:"Departamentlar reytingi", deptRankingSub:"Hal qilish foizi bo'yicha",
@@ -1684,10 +1674,6 @@
           profPassChanged:"Пароль успешно изменён ✓",
           profResolution:"Уровень решения",
           closedOfTotal:(c,t)=>`${c} закрыто / ${t} всего`,
-          profRating:"Рейтинг", ratingLbl:"Рейтинг",
-          ratingHint:"Рейтинг снижается за проблемы, закрытые не в срок",
-          topRating:"ТОП-5 рейтинг", fullRanking:"Полный рейтинг", seeAll:"Все",
-          youLbl:"вы", downloadExcel:"Excel",
           totalIssues:"Всего проблем", overallStatus:"Общее состояние",
           closedPct:"закрыто", overdueLbl:"Просрочено",
           deptRanking:"Рейтинг отделов", deptRankingSub:"По проценту решения",
@@ -1792,10 +1778,6 @@
           profPassChanged:"Password changed successfully ✓",
           profResolution:"Resolution Rate",
           closedOfTotal:(c,t)=>`${c} closed / ${t} total`,
-          profRating:"Rating", ratingLbl:"Rating",
-          ratingHint:"Rating drops for issues closed after their deadline",
-          topRating:"TOP-5 Rating", fullRanking:"Full Ranking", seeAll:"See all",
-          youLbl:"you", downloadExcel:"Excel",
           totalIssues:"Total Issues", overallStatus:"Overall Status",
           closedPct:"closed", overdueLbl:"Overdue",
           deptRanking:"Department Ranking", deptRankingSub:"By resolution rate",
@@ -1829,6 +1811,7 @@
       }
       function showNav() { $('bottomnav').classList.remove('hidden'); }
       function toast(msg, ok = true) { const t = $('toast'); t.textContent = msg; t.style.background = ok ? '#1A2535' : 'var(--red)'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500) }
+      function setU(u, p) { $('l-user').value = u; $('l-pass').value = p }
       function spin(id, on) { $(id).style.display = on ? 'block' : 'none' }
       function closeNotifPanel() { $('notif-panel').classList.remove('show'); }
       function closeLangPanel()  { $('lang-panel').classList.remove('show'); }
@@ -2057,7 +2040,6 @@
         set('lbl-password', t('password').toUpperCase());
         set('login-btn-txt', t('login'));
         setph('l-user', t('username').toLowerCase());
-        set('notif-panel-title', t('notifTitle'));
         // detail
         set('detail-title', t('detail'));
         // add form
@@ -2183,11 +2165,10 @@
       async function renderHome() {
         // Dashboard: scope=all — barcha liniyalar muammolari ko'rsatiladi
         const _today = new Date().toISOString().slice(0,10);
-        const [stats, recs, chk, ranking] = await Promise.all([
+        const [stats, recs, chk] = await Promise.all([
           api('/api/stats?scope=all'),
           api('/api/records?scope=all'),
-          api('/api/checklist?date=' + _today),
-          api('/api/ranking')
+          api('/api/checklist?date=' + _today)
         ]);
         if (!stats || !recs) return;
         const rm = t('roleMsg');
@@ -2235,24 +2216,6 @@
               <div style="width:${d.total?Math.round((d.inprogress||0)/d.total*100):0}%;background:#3B82F6"></div>
               <div style="width:${opPct - (d.total?Math.round((d.inprogress||0)/d.total*100):0)}%;background:#F59E0B;border-radius:0 4px 4px 0"></div>
             </div>
-          </div>`;
-        }).join('');
-
-        // ── Top-5 user rating ───────────────────────────────────
-        const top5 = (ranking || []).slice(0, 5);
-        const rl2 = t('roleLabel');
-        const top5Html = top5.map(u => {
-          const medal  = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : `${u.rank}.`;
-          const rColor = u.rating >= 70 ? '#22C55E' : u.rating >= 40 ? '#F59E0B' : '#EF4444';
-          const isMe   = ME && u.username === ME.username;
-          return `<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);${isMe?'background:var(--bg);border-radius:8px;padding-left:6px;padding-right:6px':''}">
-            <div style="width:24px;text-align:center;font-size:13px;flex-shrink:0">${medal}</div>
-            <div style="width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${u.full_name.slice(0,2).toUpperCase()}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.full_name}${isMe?' ('+t('youLbl')+')':''}</div>
-              <div style="font-size:10.5px;color:var(--txt3)">${u.line || rl2[u.role] || u.role || ''}</div>
-            </div>
-            <div style="font-size:15px;font-weight:700;color:${rColor};font-family:'DM Mono',monospace">${u.rating}</div>
           </div>`;
         }).join('');
 
@@ -2514,9 +2477,6 @@
         </div>
       </div>
     </div>
-
-    <!-- ═══ TOP-5 USER RATING ═══ -->
-    ${top5.length ? '<div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:32px;height:32px;border-radius:10px;background:#FFF8E1;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-star" style="font-size:17px;color:#E65100"></i></div><div style="font-size:13px;font-weight:700;color:var(--txt)">' + t('topRating') + '</div><div style="margin-left:auto;font-size:10px;color:var(--txt3);cursor:pointer" onclick="goTab(\'profil\')">' + t('seeAll') + ' →</div></div>' + top5Html + '</div>' : ''}
 
     <!-- ═══ DEPT RANKING ═══ -->
     ${ME && ME.role === 'admin' && depts.length ? '<div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:12px"><div style="width:32px;height:32px;border-radius:10px;background:#FFF8E1;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-trophy" style="font-size:17px;color:#E65100"></i></div><div style="font-size:13px;font-weight:700;color:var(--txt)">' + t('deptRanking') + '</div><div style="margin-left:auto;font-size:10px;color:var(--txt3)">' + t('deptRankingSub') + '</div></div>' + rankHtml + '</div>' : ''}
@@ -2827,28 +2787,11 @@
       }
 
       async function renderProfil() {
-        const [stats, me, ranking] = await Promise.all([api('/api/stats'), api('/api/me'), api('/api/ranking')]); if (!stats || !me) return;
+        const [stats, me] = await Promise.all([api('/api/stats'), api('/api/me')]); if (!stats || !me) return;
         const pct      = stats.total ? Math.round(stats.closed / stats.total * 100) : 0;
         const pctColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--red)';
         const pctGrad  = pct >= 70 ? '#2E7D32,#4CAF50' : pct >= 40 ? '#E65100,#FF9800' : '#C62828,#EF5350';
         const pctLabel = pct >= 70 ? "Yaxshi ✓" : pct >= 40 ? "O'rtacha" : "Past ⚠";
-        const rating     = me.rating ?? 100;
-        const ratingColor = rating >= 70 ? 'var(--green)' : rating >= 40 ? 'var(--amber)' : 'var(--red)';
-        const ratingGrad  = rating >= 70 ? '#2E7D32,#4CAF50' : rating >= 40 ? '#E65100,#FF9800' : '#C62828,#EF5350';
-        const rl3 = t('roleLabel');
-        const fullRankingHtml = (ranking || []).map(u => {
-          const medal  = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : `${u.rank}.`;
-          const rColor = u.rating >= 70 ? 'var(--green)' : u.rating >= 40 ? 'var(--amber)' : 'var(--red)';
-          const isMe   = u.username === me.username;
-          return `<div style="display:flex;align-items:center;gap:9px;padding:8px 6px;border-bottom:1px solid var(--border);${isMe?'background:rgba(21,101,192,.08);border-radius:8px':''}">
-            <div style="width:22px;text-align:center;font-size:12px;flex-shrink:0">${medal}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:${isMe?700:600};color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.full_name}${isMe?' ('+t('youLbl')+')':''}</div>
-              <div style="font-size:10px;color:var(--txt3)">${u.line || rl3[u.role] || u.role || ''}</div>
-            </div>
-            <div style="font-size:13px;font-weight:700;color:${rColor};font-family:'DM Mono',monospace">${u.rating}</div>
-          </div>`;
-        }).join('');
         const notifNew = localStorage.getItem('notif_new') !== 'off';
         const notifDl  = localStorage.getItem('notif_dl')  !== 'off';
         $('main-content').innerHTML = `
@@ -2880,25 +2823,6 @@
         <div style="font-size:11px;color:var(--txt3)">${t('closedOfTotal')(stats.closed,stats.total)}</div>
         <div style="font-size:11px;font-weight:700;color:${pctColor}">${pctLabel}</div>
       </div>
-    </div>
-
-    <div class="det-block" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600;color:var(--txt)"><i class="ti ti-star" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:${ratingColor}"></i>${t('profRating')}</div>
-        <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:${ratingColor}">${rating}</div>
-      </div>
-      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;margin-bottom:7px">
-        <div style="width:${rating}%;height:100%;background:linear-gradient(90deg,${ratingGrad});border-radius:5px;transition:width .5s ease"></div>
-      </div>
-      <div style="font-size:11px;color:var(--txt3)">${t('ratingHint')}</div>
-    </div>
-
-    <div class="det-block" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:13px;font-weight:700;color:var(--txt)"><i class="ti ti-list-numbers" style="font-size:15px;vertical-align:-2px;margin-right:5px;color:var(--blue)"></i>${t('fullRanking')}</div>
-        <button class="btn btn-sm" onclick="window.open('/api/ranking/export?lang='+LANG,'_blank')" style="border:1px solid var(--border);background:var(--bg);color:var(--txt2);padding:5px 10px;font-size:11px"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> ${t('downloadExcel')}</button>
-      </div>
-      ${fullRankingHtml ? `<div style="max-height:225px;overflow-y:auto">${fullRankingHtml}</div>` : `<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">${t('noIssues')}</div>`}
     </div>
 
     <div class="det-block" style="margin-bottom:14px">
@@ -2980,7 +2904,6 @@
             ${u.email ? `<div style="font-size:10px;color:var(--blue);margin-top:1px"><i class="ti ti-mail" style="font-size:10px"></i> ${u.email}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
-            <span title="${t('ratingLbl')}" style="font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:${(u.rating??100)>=70?'var(--green)':(u.rating??100)>=40?'var(--amber)':'var(--red)'}"><i class="ti ti-star" style="font-size:11px;vertical-align:-1px"></i> ${u.rating??100}</span>
             <span class="role-pill ${RPILL[u.role]}">${rl[u.role] || u.role}</span>
             <button onclick="openEditModal(${u.id},'${u.username}','${u.full_name}','${u.role}','${u.line||''}','${u.email||''}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-edit" style="font-size:16px;color:var(--blue)"></i></button>
             <button onclick="deleteUser(${u.id},'${u.username}')" style="background:none;border:none;cursor:pointer;padding:4px"><i class="ti ti-trash" style="font-size:16px;color:var(--txt3)"></i></button>
@@ -3929,6 +3852,10 @@ td{border:1px solid #ccc;padding:7px 9px;vertical-align:top;font-size:11px}
       }
 
       renderStaticLabels();
+
+      fetch('/api/config').then(r => r.json()).then(c => {
+        if (c.demo) $('demo-section').style.display = 'block';
+      }).catch(() => {});
 
       (async () => {
         try {
