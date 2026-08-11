@@ -1381,21 +1381,15 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
           <div class="field" style="margin:0">
             <label id="aa-lbl-ws" style="font-size:11px">Sex/Workshop *</label>
-            <select class="inp" id="aa-workshop" style="font-size:12px" onchange="aaUpdateLine()">
-              <option value="Welding">Welding</option>
-              <option value="Painting">Painting</option>
-              <option value="General Assembly">General Assembly</option>
-            </select>
+            <input class="inp" id="aa-workshop" style="font-size:12px" placeholder="Welding, Painting...">
           </div>
           <div class="field" style="margin:0">
             <label id="aa-lbl-ln" style="font-size:11px">Liniya *</label>
-            <select class="inp" id="aa-line" style="font-size:12px" onchange="aaUpdateStation()">
-            </select>
+            <input class="inp" id="aa-line" style="font-size:12px" placeholder="Liniya nomi">
           </div>
           <div class="field" style="margin:0">
             <label id="aa-lbl-st" style="font-size:11px">Stansiya *</label>
-            <select class="inp" id="aa-station" style="font-size:12px">
-            </select>
+            <input class="inp" id="aa-station" style="font-size:12px" placeholder="Stansiya nomi">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -3028,11 +3022,9 @@
       }
       function openAuditAdd() {
         _auditAddMf = [];
-        ['aa-qcode','aa-category','aa-desc','aa-disc-dept','aa-resp','aa-deadline'].forEach(id => { const el=$(id); if(el) el.value=''; });
+        ['aa-workshop','aa-line','aa-station','aa-qcode','aa-category','aa-desc','aa-disc-dept','aa-resp','aa-deadline'].forEach(id => { const el=$(id); if(el) el.value=''; });
         if ($('aa-level')) $('aa-level').value = 'Medium';
         if ($('aa-err')) $('aa-err').textContent = '';
-        if ($('aa-workshop')) $('aa-workshop').value = 'Welding';
-        aaUpdateLine();
         renderAuditAddGrid();
         $('audit-add-modal').classList.add('show');
       }
@@ -3731,35 +3723,6 @@ td{border:1px solid #ccc;padding:7px 9px;vertical-align:top;font-size:11px}
       function openLB(src) { $('lb-img').src = src; $('lightbox').classList.add('show') }
       function closeLB() { $('lightbox').classList.remove('show') }
 
-
-      const _AA_LINES = {
-        'Welding':          ['Welding'],
-        'Painting':         ['Painting'],
-        'General Assembly': ['CHASSIS','TRIM','FINAL LINE','SUB LINE'],
-      };
-      const _AA_STATIONS = {
-        'Welding':    ['WS-01','WS-02','WS-03','WS-04','WS-05','WS-06','WS-07','WS-08','WS-09','WS-10'],
-        'Painting':   ['INSPECTION','TOP-COAT','PRIMER SANDING','PRIMER-COAT','UNDERBODY COATING','SEALING','ED-SANDING','PRE-TREATMENT ELECTR (PT/ED)'],
-        'CHASSIS':    ['C-01L','C-02L','C-03L','C-04L','C-05L','C-06L','C-07L','C-08L',
-                       'C-09L','C-10L','C-11L','C-12L','C-13L','C-14L','C-15L','C-16L','RIGHT'],
-        'TRIM':       ['TRIM'],
-        'FINAL LINE': ['FINAL LINE'],
-        'SUB LINE':   ['SUB LINE'],
-      };
-
-      function aaUpdateLine() {
-        const ws  = $('aa-workshop').value;
-        const sel = $('aa-line'); if (!sel) return;
-        const lines = _AA_LINES[ws] || [ws];
-        sel.innerHTML = lines.map(l => '<option value="'+l+'">'+l+'</option>').join('');
-        aaUpdateStation();
-      }
-      function aaUpdateStation() {
-        const line = $('aa-line').value;
-        const sel  = $('aa-station'); if (!sel) return;
-        const sts  = _AA_STATIONS[line] || _AA_STATIONS[$('aa-workshop').value] || [];
-        sel.innerHTML = sts.map(s => '<option value="'+s+'">'+s+'</option>').join('');
-      }
 
       const _STATIONS = {
         'Welding': [
